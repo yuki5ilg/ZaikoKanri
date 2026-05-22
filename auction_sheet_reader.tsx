@@ -153,7 +153,7 @@ export default function App() {
       let lastNum = 0, lastRow = 1;
       for (let r = range.e.r; r >= 0; r--) {
         const cell = ws[XLSX.utils.encode_cell({ r, c: 0 })];
-        if (cell && typeof cell.v === "string" && /^R\d+-\d+$/i.test(cell.v)) {
+        if (cell && typeof cell.v === "string" && /^R?\d+-\d+$/i.test(cell.v)) {
           lastNum = parseInt(cell.v.split("-")[1]);
           lastRow = r + 1;
           break;
@@ -198,7 +198,7 @@ export default function App() {
     const valid = results.filter(r => r._ok && (r.car_name || r.chassis_number));
     if (!valid.length) return;
 
-    const MAX_COL = 52;
+    const MAX_COL = 28;
     const colLabels = [];
     for (let i = 1; i <= MAX_COL; i++) {
       let s = "", n = i;
@@ -221,7 +221,7 @@ export default function App() {
     const rows = [];
 
     for (const r of valid) {
-      const id = `R27-${String(num).padStart(3, "0")}`;
+      const id = `27-${String(num).padStart(3, "0")}`;
       const carName = [r.car_name, r.grade].filter(Boolean).join("　");
       const yearMonth = r.year ? `${r.year}${r.month ? "/" + r.month : ""}` : "";
 
@@ -229,21 +229,21 @@ export default function App() {
       row1[ci("A")]  = id;
       row1[ci("D")]  = yearMonth;
       row1[ci("F")]  = carName;
-      row1[ci("J")]  = r.score ? (parseFloat(r.score) || r.score) : "";
-      row1[ci("K")]  = r.purchase_price ? parseInt(r.purchase_price) : "";
-      row1[ci("M")]  = r.tax ? parseInt(r.tax) : "";
-      row1[ci("O")]  = r.self_tax ? parseInt(r.self_tax) : "";
-      row1[ci("Q")]  = r.recycle_fee ? parseInt(r.recycle_fee) : "";
-      row1[ci("S")]  = r.auction_fee ? parseInt(r.auction_fee) : "";
-      row1[ci("AC")] = "予定";
+      row1[ci("H")]  = r.score ? (parseFloat(r.score) || r.score) : "";
+      row1[ci("I")]  = r.purchase_price ? parseInt(r.purchase_price) : "";
+      row1[ci("J")]  = r.tax ? parseInt(r.tax) : "";
+      row1[ci("K")]  = r.self_tax ? parseInt(r.self_tax) : "";
+      row1[ci("L")]  = r.recycle_fee ? parseInt(r.recycle_fee) : "";
+      row1[ci("M")]  = r.auction_fee ? parseInt(r.auction_fee) : "";
+      row1[ci("Q")]  = "予定";
 
       const row2 = Array(MAX_COL).fill("");
       row2[ci("B")]  = r.auction_house || "";
       row2[ci("C")]  = r.lot_number || "";
       row2[ci("D")]  = r.color || "";
       row2[ci("F")]  = r.chassis_number || "";
-      row2[ci("I")]  = r.mileage ? parseInt(r.mileage) : "";
-      row2[ci("AC")] = "着";
+      row2[ci("G")]  = r.mileage ? parseInt(r.mileage) : "";
+      row2[ci("Q")]  = "着";
 
       rows.push(row1);
       rows.push(row2);
@@ -255,7 +255,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `追記データ_R27-${String((xlsxData?.lastNum ?? 0) + 1).padStart(3, "0")}.csv`;
+    a.download = `追記データ_27-${String((xlsxData?.lastNum ?? 0) + 1).padStart(3, "0")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -293,7 +293,7 @@ export default function App() {
           {xlsxData ? (
             <div style={{ marginTop: 10, background: "#f0fdf4", borderRadius: 8, padding: "10px 14px" }}>
               <div style={{ fontWeight: 700, color: "#166534", fontSize: 13 }}>{xlsxData.name}</div>
-              <div style={{ fontSize: 12, color: "#16a34a", marginTop: 1 }}>最終: R27-{String(xlsxData.lastNum).padStart(3,"0")} → 次回: R27-{String(nextNum).padStart(3,"0")} から</div>
+              <div style={{ fontSize: 12, color: "#16a34a", marginTop: 1 }}>最終: 27-{String(xlsxData.lastNum).padStart(3,"0")} → 次回: 27-{String(nextNum).padStart(3,"0")} から</div>
             </div>
           ) : (
             <div onClick={() => xlsxRef.current.click()} style={{ marginTop: 12, border: "2px dashed #cbd5e1", borderRadius: 10, padding: 18, textAlign: "center", cursor: "pointer", background: "#f8fafc" }}>
@@ -351,7 +351,7 @@ export default function App() {
         {canDownload && (
           <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span>📋</span>
-            <div style={{ flex: 1, fontSize: 13, color: "#166534" }}><strong>{okResults.length}台</strong>分のCSVをダウンロードできます（R27-{String(nextNum).padStart(3,"0")}〜）</div>
+            <div style={{ flex: 1, fontSize: 13, color: "#166534" }}><strong>{okResults.length}台</strong>分のCSVをダウンロードできます（27-{String(nextNum).padStart(3,"0")}〜）</div>
             <button onClick={handleDownload} style={{ background: "#22c55e", color: "white", border: "none", borderRadius: 8, padding: "8px 16px", fontWeight: 700, cursor: "pointer", fontSize: 13 }}>⬇ CSVでDL</button>
           </div>
         )}
@@ -372,7 +372,7 @@ export default function App() {
 
         {canDownload && (
           <button onClick={handleDownload} style={{ background: "#22c55e", color: "white", border: "none", borderRadius: 10, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", width: "100%", marginTop: 4, fontFamily: "inherit" }}>
-            ⬇ {okResults.length}台分をCSVでDL（R27-{String(nextNum).padStart(3,"0")}〜）
+            ⬇ {okResults.length}台分をCSVでDL（27-{String(nextNum).padStart(3,"0")}〜）
           </button>
         )}
       </div>
