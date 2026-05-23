@@ -55,6 +55,7 @@ Private Sub BuildFrmSettings(vbp As Object)
     Dim c    As Object
 
     Set comp = vbp.VBComponents.Add(2)   ' 2 = vbext_ct_MSForm
+    DoEvents
     comp.Name = "frmSettings"
 
     Set frm = comp.Designer
@@ -101,6 +102,7 @@ Private Sub BuildFrmInput(vbp As Object)
     Dim c    As Object
 
     Set comp = vbp.VBComponents.Add(2)
+    DoEvents
     comp.Name = "frmInput"
 
     Set frm = comp.Designer
