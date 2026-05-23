@@ -13,6 +13,10 @@ Option Explicit
 ' ============================================================
 
 Public Sub CreateForms()
+    ' DesignerアクセスにはVBEウィンドウの表示が必要
+    Application.VBE.MainWindow.Visible = True
+    DoEvents
+
     Dim vbp As Object
     On Error Resume Next
     Set vbp = ThisWorkbook.VBProject
@@ -59,6 +63,8 @@ Private Sub BuildFrmSettings(vbp As Object)
     comp.Name = "frmSettings"
 
     Set frm = comp.Designer
+    If frm Is Nothing Then DoEvents : Set frm = comp.Designer
+    If frm Is Nothing Then MsgBox "frmSettings のDesigner取得失敗。再実行してください。", vbExclamation : Exit Sub
     frm.Caption         = "設定"
     frm.Width           = 400
     frm.Height          = 172
@@ -106,6 +112,8 @@ Private Sub BuildFrmInput(vbp As Object)
     comp.Name = "frmInput"
 
     Set frm = comp.Designer
+    If frm Is Nothing Then DoEvents : Set frm = comp.Designer
+    If frm Is Nothing Then MsgBox "frmInput のDesigner取得失敗。再実行してください。", vbExclamation : Exit Sub
     frm.Caption         = "在庫取込"
     frm.Width           = 756
     frm.Height          = 560
