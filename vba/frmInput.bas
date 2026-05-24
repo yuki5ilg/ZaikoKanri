@@ -6,35 +6,37 @@ Private m_Count   As Integer
 Private m_Idx     As Integer
 Private m_Main    As Integer
 
-' ============================================================
-' 初期化: 全画像配列 + 取込対象インデックス
-' ============================================================
 Public Sub SetupForm(files() As String, mainIdx As Integer)
     m_Files = files
     m_Count = UBound(files) - LBound(files) + 1
     m_Idx   = mainIdx
     m_Main  = mainIdx
-
     RefreshImage
 
     ' === AI-OCR ここから（API課金のため無効化中）===
     ' Dim d As CarData
     ' d = CallClaudeOCR(m_Files(m_Main))
-    ' txtCarName.Text      = d.CarName
-    ' txtYear.Text         = d.YearMonth
-    ' txtColor.Text        = d.Color
-    ' txtChassis.Text      = d.Chassis
-    ' txtScore.Text        = d.Score
-    ' txtMileage.Text      = d.Mileage
-    ' txtPrice.Text        = d.Price
-    ' txtTax.Text          = d.Tax
-    ' txtCarTax.Text       = d.CarTax
-    ' txtRecycle.Text      = d.Recycle
-    ' txtFee.Text          = d.AuctionFee
-    ' txtVenue.Text        = d.Venue
-    ' txtLotNum.Text       = d.LotNumber
-    ' txtSession.Text      = d.Session
-    ' txtShaken.Text       = d.Shaken
+    ' txtDate.Text        = d.PurchaseDate
+    ' txtSession.Text     = d.Session
+    ' txtCarName.Text     = d.CarName
+    ' txtYear.Text        = d.YearMonth
+    ' txtShaken.Text      = d.Shaken
+    ' txtColor.Text       = d.Color
+    ' txtChassis.Text     = d.Chassis
+    ' txtScore.Text       = d.Score
+    ' txtMileage.Text     = d.Mileage
+    ' txtPrice.Text       = d.Price
+    ' txtTax.Text         = d.Tax
+    ' txtCarTax.Text      = d.CarTax
+    ' txtRecycle.Text     = d.Recycle
+    ' txtFee.Text         = d.AuctionFee
+    ' txtTotal.Text       = d.Total
+    ' txtLoss.Text        = d.Loss
+    ' txtSupplier.Text    = d.Supplier
+    ' txtLotNum.Text      = d.LotNumber
+    ' txtPlate.Text       = d.Plate
+    ' txtOwner.Text       = d.Owner
+    ' txtMemo.Text        = d.Memo
     ' === AI-OCR ここまで ===
 
     ' --- デフォルト値（AIが有効になったら削除） ---
@@ -52,8 +54,13 @@ Public Sub SetupForm(files() As String, mainIdx As Integer)
     txtCarTax.Text   = "35400"
     txtRecycle.Text  = "12000"
     txtFee.Text      = "32000"
-    txtVenue.Text    = "USS大阪"
+    txtTotal.Text    = ""
+    txtLoss.Text     = ""
+    txtSupplier.Text = "USS大阪"
     txtLotNum.Text   = "12345"
+    txtPlate.Text    = ""
+    txtOwner.Text    = ""
+    txtMemo.Text     = ""
 End Sub
 
 Private Sub RefreshImage()
@@ -75,27 +82,29 @@ Private Sub btnNext_Click()
     If m_Idx < m_Count - 1 Then m_Idx = m_Idx + 1 : RefreshImage
 End Sub
 
-' ============================================================
-' 入力値を CarData で返す（列に1:1対応）
-' ============================================================
 Public Function GetData() As CarData
     Dim data As CarData
-    data.PurchaseDate = Trim(txtDate.Text)     ' B1: 仕入れ日
-    data.Session      = Trim(txtSession.Text)  ' C1: 回次
-    data.CarName      = Trim(txtCarName.Text)  ' F1: 車名
-    data.YearMonth    = Trim(txtYear.Text)     ' D1: 年式/月
-    data.Shaken       = Trim(txtShaken.Text)   ' G1: 車検
-    data.Score        = Trim(txtScore.Text)    ' H:  評価点
-    data.Price        = Trim(txtPrice.Text)    ' I:  車輌代
-    data.Tax          = Trim(txtTax.Text)      ' J:  消費税
-    data.CarTax       = Trim(txtCarTax.Text)   ' K:  自税
-    data.Recycle      = Trim(txtRecycle.Text)  ' L:  リサイクル
-    data.AuctionFee   = Trim(txtFee.Text)      ' M:  落札料
-    data.Venue        = Trim(txtVenue.Text)    ' B2: 仕入れ先
-    data.LotNumber    = Trim(txtLotNum.Text)   ' C2: 出品番号
-    data.Color        = Trim(txtColor.Text)    ' D2: 色
-    data.Chassis      = Trim(txtChassis.Text)  ' F2: 車台番号
-    data.Mileage      = Trim(txtMileage.Text)  ' G2: 走行距離
+    data.PurchaseDate = Trim(txtDate.Text)        ' B1: 仕入れ日
+    data.Session      = Trim(txtSession.Text)     ' C1: 回次
+    data.CarName      = Trim(txtCarName.Text)     ' F1: 車名
+    data.YearMonth    = Trim(txtYear.Text)        ' D1: 年式/月
+    data.Shaken       = Trim(txtShaken.Text)      ' G1: 車検
+    data.Score        = Trim(txtScore.Text)       ' H:  評価点
+    data.Price        = Trim(txtPrice.Text)       ' I:  車輌代
+    data.Tax          = Trim(txtTax.Text)         ' J:  消費税
+    data.CarTax       = Trim(txtCarTax.Text)      ' K:  自税
+    data.Recycle      = Trim(txtRecycle.Text)     ' L:  リサイクル
+    data.AuctionFee   = Trim(txtFee.Text)         ' M:  落札料
+    data.Total        = Trim(txtTotal.Text)       ' N:  合計
+    data.Loss         = Trim(txtLoss.Text)        ' O:  評価損
+    data.Plate        = Trim(txtPlate.Text)       ' P1: 車輌番号
+    data.Supplier     = Trim(txtSupplier.Text)    ' B2: 仕入れ先
+    data.LotNumber    = Trim(txtLotNum.Text)      ' C2: 出品番号
+    data.Color        = Trim(txtColor.Text)       ' D2: 色
+    data.Chassis      = Trim(txtChassis.Text)     ' F2: 車台番号
+    data.Mileage      = Trim(txtMileage.Text)     ' G2: 走行距離
+    data.Owner        = Trim(txtOwner.Text)       ' P2: 所有者
+    data.Memo         = Trim(txtMemo.Text)        ' T:  補足
     GetData = data
 End Function
 

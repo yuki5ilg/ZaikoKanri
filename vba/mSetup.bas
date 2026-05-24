@@ -26,6 +26,7 @@ Public Sub Setup()
     RemoveComponent vbProj, "mMain"
     RemoveComponent vbProj, "frmSettings"
     RemoveComponent vbProj, "frmInput"
+    RemoveComponent vbProj, "frmSales"
 
     Dim mMain As Object
     Set mMain = vbProj.VBComponents.Add(VBEXT_CT_STDMODULE)
@@ -34,6 +35,7 @@ Public Sub Setup()
 
     BuildFrmSettings vbProj
     BuildFrmInput vbProj
+    BuildFrmSales vbProj
 
     MsgBox "セットアップ完了！" & vbCrLf & "Alt+F8 → Main を実行してください。", vbInformation
     Exit Sub
@@ -125,15 +127,18 @@ Private Sub BuildFrmInput(vbProj As Object)
     AddCtl d, "Forms.CommandButton.1", "btnPrev",      6,   414, 40,  22, "←"
     AddCtl d, "Forms.CommandButton.1", "btnNext",      50,  414, 40,  22, "→"
 
-    ' 右ペイン: 入力フォーム（列に1:1対応）
+    ' 右ペイン: 入力フォーム（全列対応）
     Dim labels As Variant, names As Variant, i As Integer
-    labels = Array("仕入れ日", "回次", "車名(グレード含む)", "年式/月", "車検", _
-                   "色", "車台番号", "評価点", _
-                   "走行距離(km)", "車輌代(円)", "消費税(円)", "自税(円)", _
-                   "リサイクル(円)", "落札料(円)", "仕入れ先(会場)", "出品番号")
+    labels = Array("仕入れ日(B1)", "回次(C1)", "車名/グレード(F1)", "年式/月(D1)", "車検(G1)", _
+                   "評価点(H)", "車輌代(I)", "消費税(J)", "自税(K)", "リサイクル(L)", _
+                   "落札料(M)", "合計(N)", "評価損(O)", "車輌番号(P1)", _
+                   "仕入れ先(B2)", "出品番号(C2)", "色(D2)", "車台番号(F2)", _
+                   "走行距離km(G2)", "所有者(P2)", "補足(T)")
     names  = Array("Date", "Session", "CarName", "Year", "Shaken", _
-                   "Color", "Chassis", "Score", _
-                   "Mileage", "Price", "Tax", "CarTax", "Recycle", "Fee", "Venue", "LotNum")
+                   "Score", "Price", "Tax", "CarTax", "Recycle", _
+                   "Fee", "Total", "Loss", "Plate", _
+                   "Supplier", "LotNum", "Color", "Chassis", _
+                   "Mileage", "Owner", "Memo")
 
     Dim bL As Single, bT As Single, rH As Single
     bL = 300 : bT = 28 : rH = 26
@@ -158,70 +163,123 @@ Private Sub BuildFrmInput(vbProj As Object)
     comp.CodeModule.AddFromString GetFrmInputCode()
 End Sub
 
+Private Sub BuildFrmSales(vbProj As Object)
+    Dim comp As Object
+    Set comp = vbProj.VBComponents.Add(VBEXT_CT_MSFORM)
+    comp.Name = "frmSales"
+    comp.Properties("Caption") = "売上登録"
+    comp.Properties("Width") = 320
+    comp.Properties("Height") = 380
+
+    Dim d As Object
+    Set d = GetDesigner(comp)
+
+    Dim labels As Variant, names As Variant, i As Integer
+    labels = Array("シート名", "仕入番号(検索)", "名義変更(U)", "売上日(V1)", "売上先(V2)", _
+                   "売上回次(W1)", "売上出品番号(W2)", "売上車輌代(X)", "売上消費税(Y)", _
+                   "売上リサイクル(Z)", "売上合計(AA)", "入金日(AB)")
+    names  = Array("SheetName", "CarNum", "Meigi", "SaleDate", "Buyer", _
+                   "SaleSession", "SaleLot", "SalePrice", "SaleTax", _
+                   "SaleRecycle", "SaleTotal", "PayDate")
+
+    Dim bL As Single, bT As Single, rH As Single
+    bL = 12 : bT = 12 : rH = 26
+    For i = 0 To UBound(labels)
+        AddCtl d, "Forms.Label.1",   "lbl" & names(i), bL,      bT + i * rH, 110, 18, CStr(labels(i))
+        AddCtl d, "Forms.TextBox.1", "txt" & names(i), bL + 115, bT + i * rH, 150, 20
+    Next i
+
+    Dim btnTop As Single
+    btnTop = bT + (UBound(labels) + 1) * rH + 6
+    comp.Properties("Height") = btnTop + 50
+    AddCtl d, "Forms.CommandButton.1", "btnOK",     bL + 60,  btnTop, 80, 26, "登録"
+    AddCtl d, "Forms.CommandButton.1", "btnCancel", bL + 150, btnTop, 80, 26, "閉じる"
+
+    comp.CodeModule.AddFromString GetFrmSalesCode()
+End Sub
+
 Private Function GetMMainCode() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' グローバル変数" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
     s = s & "Public g_SheetName  As String" & vbCrLf
     s = s & "Public g_FolderPath As String" & vbCrLf
     s = s & "Public g_Cancelled  As Boolean" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' 1台分のデータ" & vbCrLf
+    s = s & "' 仕入れデータ（列 A-T）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Public Type CarData" & vbCrLf
-    s = s & "    CarNumber    As String   ' 管理番号 (例: 27-001)" & vbCrLf
-    s = s & "    PurchaseDate As String   ' 仕入れ日 (例: 2025/5/24)" & vbCrLf
-    s = s & "    Session      As String   ' 回次" & vbCrLf
-    s = s & "    YearMonth    As String   ' 年式/月 (例: 2021/7)" & vbCrLf
-    s = s & "    CarName      As String   ' 車名（グレード含む）" & vbCrLf
-    s = s & "    Shaken       As String   ' 車検 (例: 7/12)" & vbCrLf
-    s = s & "    Score        As Variant  ' 評価点" & vbCrLf
-    s = s & "    Price        As Variant  ' 車輌代" & vbCrLf
-    s = s & "    Tax          As Variant  ' 消費税" & vbCrLf
-    s = s & "    CarTax       As Variant  ' 自税" & vbCrLf
-    s = s & "    Recycle      As Variant  ' リサイクル" & vbCrLf
-    s = s & "    AuctionFee   As Variant  ' 落札料" & vbCrLf
-    s = s & "    Venue        As String   ' 仕入れ先（会場）" & vbCrLf
-    s = s & "    LotNumber    As String   ' 出品番号" & vbCrLf
-    s = s & "    Color        As String   ' 色" & vbCrLf
-    s = s & "    Chassis      As String   ' 車台番号" & vbCrLf
-    s = s & "    Mileage      As Variant  ' 走行距離" & vbCrLf
+    s = s & "    CarNumber    As String   ' A:  仕入番号（自動）" & vbCrLf
+    s = s & "    PurchaseDate As String   ' B1: 仕入れ日" & vbCrLf
+    s = s & "    Supplier     As String   ' B2: 仕入れ先" & vbCrLf
+    s = s & "    Session      As String   ' C1: 回次" & vbCrLf
+    s = s & "    LotNumber    As String   ' C2: 出品番号" & vbCrLf
+    s = s & "    YearMonth    As String   ' D1: 年式/月" & vbCrLf
+    s = s & "    Color        As String   ' D2: 色" & vbCrLf
+    s = s & "    CarName      As String   ' F1: 車名（グレード含む）" & vbCrLf
+    s = s & "    Chassis      As String   ' F2: 車台番号" & vbCrLf
+    s = s & "    Shaken       As String   ' G1: 車検" & vbCrLf
+    s = s & "    Mileage      As Variant  ' G2: 走行距離" & vbCrLf
+    s = s & "    Score        As Variant  ' H:  評価点" & vbCrLf
+    s = s & "    Price        As Variant  ' I:  車輌代" & vbCrLf
+    s = s & "    Tax          As Variant  ' J:  消費税" & vbCrLf
+    s = s & "    CarTax       As Variant  ' K:  自税" & vbCrLf
+    s = s & "    Recycle      As Variant  ' L:  リサイクル" & vbCrLf
+    s = s & "    AuctionFee   As Variant  ' M:  落札料" & vbCrLf
+    s = s & "    Total        As Variant  ' N:  合計" & vbCrLf
+    s = s & "    Loss         As Variant  ' O:  評価損" & vbCrLf
+    s = s & "    Plate        As String   ' P1: 車輌番号" & vbCrLf
+    s = s & "    Owner        As String   ' P2: 所有者" & vbCrLf
+    s = s & "    Memo         As String   ' T:  補足" & vbCrLf
     s = s & "End Type" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' エントリポイント" & vbCrLf
+    s = s & "' 売上データ（列 U-AB）" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "Public Type SaleData" & vbCrLf
+    s = s & "    CarNumber   As String   ' A:  仕入番号（検索キー）" & vbCrLf
+    s = s & "    Meigi       As String   ' U:  名義変更" & vbCrLf
+    s = s & "    SaleDate    As String   ' V1: 売上日" & vbCrLf
+    s = s & "    Buyer       As String   ' V2: 売上先" & vbCrLf
+    s = s & "    SaleSession As String   ' W1: 売上回次" & vbCrLf
+    s = s & "    SaleLot     As String   ' W2: 売上出品番号" & vbCrLf
+    s = s & "    SalePrice   As Variant  ' X:  売上車輌代" & vbCrLf
+    s = s & "    SaleTax     As Variant  ' Y:  売上消費税" & vbCrLf
+    s = s & "    SaleRecycle As Variant  ' Z:  売上リサイクル" & vbCrLf
+    s = s & "    SaleTotal   As Variant  ' AA: 売上合計" & vbCrLf
+    s = s & "    PaymentDate As String   ' AB: 入金日" & vbCrLf
+    s = s & "End Type" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "' 仕入れ入力エントリ（画像フォルダから）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Sub Main()" & vbCrLf
     s = s & "    g_SheetName  = ""27期""" & vbCrLf
     s = s & "    g_FolderPath = """"" & vbCrLf
     s = s & "    g_Cancelled  = False" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    frmSettings.Show" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' A列を検索して連番の最大値+1を返す" & vbCrLf
-    s = s & "' パターン: \d+-\d+ (例: 27-005)" & vbCrLf
+    s = s & "' 売上入力エントリ" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "Sub Main_Sales()" & vbCrLf
+    s = s & "    g_SheetName = ""27期""" & vbCrLf
+    s = s & "    frmSales.Show" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "' A列を検索して連番の最大値+1を返す（例: 27-005 → 6）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Function GetNextNumber(ws As Worksheet) As Long" & vbCrLf
-    s = s & "    Dim i       As Long" & vbCrLf
-    s = s & "    Dim maxNum  As Long" & vbCrLf
-    s = s & "    Dim cellVal As String" & vbCrLf
-    s = s & "    Dim parts() As String" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "    Dim i As Long, maxNum As Long, cellVal As String, parts() As String" & vbCrLf
     s = s & "    maxNum = 0" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    For i = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row To 1 Step -1" & vbCrLf
     s = s & "        On Error Resume Next" & vbCrLf
     s = s & "        cellVal = Trim(CStr(ws.Cells(i, 1).Value2))" & vbCrLf
     s = s & "        On Error GoTo 0" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "        If InStr(cellVal, ""-"") > 0 And _" & vbCrLf
-    s = s & "           InStr(cellVal, ""-"") = InStrRev(cellVal, ""-"") Then" & vbCrLf
+    s = s & "        If InStr(cellVal, ""-"") > 0 And InStr(cellVal, ""-"") = InStrRev(cellVal, ""-"") Then" & vbCrLf
     s = s & "            parts = Split(cellVal, ""-"")" & vbCrLf
     s = s & "            If IsNumeric(parts(0)) And IsNumeric(parts(1)) Then" & vbCrLf
     s = s & "                Dim num As Long" & vbCrLf
@@ -230,91 +288,109 @@ Private Function GetMMainCode() As String
     s = s & "            End If" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "    Next i" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    GetNextNumber = maxNum + 1" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' 次の書き込み先行番号を返す" & vbCrLf
-    s = s & "' Q列(17列)の「着」を末尾として次行を算出" & vbCrLf
+    s = s & "' 次の書き込み先行番号を返す（Q列""着""を末尾として算出）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Function GetNextWriteRow(ws As Worksheet) As Long" & vbCrLf
-    s = s & "    Dim lastRow As Long" & vbCrLf
-    s = s & "    Dim qVal    As String" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "    Dim lastRow As Long, qVal As String" & vbCrLf
     s = s & "    lastRow = ws.Cells(ws.Rows.Count, 17).End(xlUp).Row" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    If lastRow < 10 Then" & vbCrLf
-    s = s & "        GetNextWriteRow = 10" & vbCrLf
-    s = s & "        Exit Function" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "    If lastRow < 10 Then GetNextWriteRow = 10 : Exit Function" & vbCrLf
     s = s & "    qVal = Trim(CStr(ws.Cells(lastRow, 17).Value2))" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    Select Case qVal" & vbCrLf
-    s = s & "        Case ""着""" & vbCrLf
-    s = s & "            GetNextWriteRow = lastRow + 1" & vbCrLf
-    s = s & "        Case ""予定""" & vbCrLf
-    s = s & "            GetNextWriteRow = lastRow + 2" & vbCrLf
-    s = s & "        Case Else" & vbCrLf
-    s = s & "            GetNextWriteRow = lastRow + 1" & vbCrLf
+    s = s & "        Case ""着""  : GetNextWriteRow = lastRow + 1" & vbCrLf
+    s = s & "        Case ""予定"" : GetNextWriteRow = lastRow + 2" & vbCrLf
+    s = s & "        Case Else  : GetNextWriteRow = lastRow + 1" & vbCrLf
     s = s & "    End Select" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' シート名から期番号を取得 (""27期"" → ""27"")" & vbCrLf
+    s = s & "' シート名から期番号取得（""27期"" → ""27""）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Function GetPeriodNumber(ws As Worksheet) As String" & vbCrLf
-    s = s & "    Dim s      As String" & vbCrLf
-    s = s & "    Dim i      As Integer" & vbCrLf
-    s = s & "    Dim result As String" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    s      = ws.Name" & vbCrLf
-    s = s & "    result = """"" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "    Dim s As String, i As Integer, result As String" & vbCrLf
+    s = s & "    s = ws.Name : result = """"" & vbCrLf
     s = s & "    For i = 1 To Len(s)" & vbCrLf
-    s = s & "        If IsNumeric(Mid(s, i, 1)) Then" & vbCrLf
-    s = s & "            result = result & Mid(s, i, 1)" & vbCrLf
-    s = s & "        Else" & vbCrLf
-    s = s & "            Exit For" & vbCrLf
-    s = s & "        End If" & vbCrLf
+    s = s & "        If IsNumeric(Mid(s, i, 1)) Then result = result & Mid(s, i, 1) Else Exit For" & vbCrLf
     s = s & "    Next i" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    If result = """" Then result = ""27""" & vbCrLf
     s = s & "    GetPeriodNumber = result" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' シートに2行書き込み (Value2のみ使用・書式変更なし)" & vbCrLf
+    s = s & "' 仕入番号からシート行番号を返す（見つからなければ 0）" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "Function FindCarRow(ws As Worksheet, carNum As String) As Long" & vbCrLf
+    s = s & "    Dim i As Long" & vbCrLf
+    s = s & "    For i = 1 To ws.Cells(ws.Rows.Count, 1).End(xlUp).Row" & vbCrLf
+    s = s & "        If Trim(CStr(ws.Cells(i, 1).Value2)) = Trim(carNum) Then" & vbCrLf
+    s = s & "            FindCarRow = i : Exit Function" & vbCrLf
+    s = s & "        End If" & vbCrLf
+    s = s & "    Next i" & vbCrLf
+    s = s & "    FindCarRow = 0" & vbCrLf
+    s = s & "End Function" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "' 仕入れデータをシートに2行書き込み" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Sub WriteToSheet(ws As Worksheet, data As CarData)" & vbCrLf
     s = s & "    Dim r As Long" & vbCrLf
     s = s & "    r = GetNextWriteRow(ws)" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' --- 行1 ---" & vbCrLf
-    s = s & "    ws.Cells(r, 1).Value2  = data.CarNumber      ' A: 管理番号" & vbCrLf
-    s = s & "    ws.Cells(r, 4).Value2  = data.YearMonth       ' D: 年式/月" & vbCrLf
-    s = s & "    ws.Cells(r, 6).Value2  = data.CarName         ' F: 車名" & vbCrLf
-    s = s & "    ws.Cells(r, 17).Value2 = ""予定""               ' Q: 付属品" & vbCrLf
+    s = s & "    ' 行1" & vbCrLf
+    s = s & "    ws.Cells(r,  1).Value2 = data.CarNumber   ' A" & vbCrLf
+    s = s & "    ws.Cells(r,  4).Value2 = data.YearMonth   ' D" & vbCrLf
+    s = s & "    ws.Cells(r,  6).Value2 = data.CarName     ' F" & vbCrLf
+    s = s & "    ws.Cells(r, 17).Value2 = ""予定""           ' Q" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    If data.PurchaseDate <> """" Then ws.Cells(r, 2).Value2  = data.PurchaseDate  ' B: 仕入れ日" & vbCrLf
-    s = s & "    If data.Session      <> """" Then ws.Cells(r, 3).Value2  = data.Session       ' C: 回次" & vbCrLf
-    s = s & "    If data.Shaken       <> """" Then ws.Cells(r, 7).Value2  = data.Shaken        ' G: 車検" & vbCrLf
-    s = s & "    If data.Score        <> """" Then ws.Cells(r, 8).Value2  = data.Score         ' H: 評価点" & vbCrLf
-    s = s & "    If data.Price        <> """" Then ws.Cells(r, 9).Value2  = CLng(data.Price)   ' I: 車輌代" & vbCrLf
-    s = s & "    If data.Tax          <> """" Then ws.Cells(r, 10).Value2 = CLng(data.Tax)     ' J: 消費税" & vbCrLf
-    s = s & "    If data.CarTax       <> """" Then ws.Cells(r, 11).Value2 = CLng(data.CarTax)  ' K: 自税" & vbCrLf
-    s = s & "    If data.Recycle      <> """" Then ws.Cells(r, 12).Value2 = CLng(data.Recycle) ' L: リサイクル" & vbCrLf
-    s = s & "    If data.AuctionFee   <> """" Then ws.Cells(r, 13).Value2 = CLng(data.AuctionFee) ' M: 落札料" & vbCrLf
+    s = s & "    If data.PurchaseDate <> """" Then ws.Cells(r,  2).Value2 = data.PurchaseDate" & vbCrLf
+    s = s & "    If data.Session      <> """" Then ws.Cells(r,  3).Value2 = data.Session" & vbCrLf
+    s = s & "    If data.Shaken       <> """" Then ws.Cells(r,  7).Value2 = data.Shaken" & vbCrLf
+    s = s & "    If data.Score        <> """" Then ws.Cells(r,  8).Value2 = data.Score" & vbCrLf
+    s = s & "    If data.Price        <> """" Then ws.Cells(r,  9).Value2 = CLng(data.Price)" & vbCrLf
+    s = s & "    If data.Tax          <> """" Then ws.Cells(r, 10).Value2 = CLng(data.Tax)" & vbCrLf
+    s = s & "    If data.CarTax       <> """" Then ws.Cells(r, 11).Value2 = CLng(data.CarTax)" & vbCrLf
+    s = s & "    If data.Recycle      <> """" Then ws.Cells(r, 12).Value2 = CLng(data.Recycle)" & vbCrLf
+    s = s & "    If data.AuctionFee   <> """" Then ws.Cells(r, 13).Value2 = CLng(data.AuctionFee)" & vbCrLf
+    s = s & "    If data.Total        <> """" Then ws.Cells(r, 14).Value2 = CLng(data.Total)" & vbCrLf
+    s = s & "    If data.Loss         <> """" Then ws.Cells(r, 15).Value2 = CLng(data.Loss)" & vbCrLf
+    s = s & "    If data.Plate        <> """" Then ws.Cells(r, 16).Value2 = data.Plate" & vbCrLf
+    s = s & "    If data.Memo         <> """" Then ws.Cells(r, 20).Value2 = data.Memo" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' --- 行2 ---" & vbCrLf
-    s = s & "    ws.Cells(r + 1, 2).Value2  = data.Venue       ' B: 仕入れ先（会場）" & vbCrLf
-    s = s & "    ws.Cells(r + 1, 3).Value2  = data.LotNumber   ' C: 出品番号" & vbCrLf
-    s = s & "    ws.Cells(r + 1, 4).Value2  = data.Color        ' D: 色" & vbCrLf
-    s = s & "    ws.Cells(r + 1, 6).Value2  = data.Chassis      ' F: 車台番号" & vbCrLf
-    s = s & "    ws.Cells(r + 1, 17).Value2 = ""着""              ' Q: 付属品" & vbCrLf
+    s = s & "    ' 行2" & vbCrLf
+    s = s & "    ws.Cells(r+1, 17).Value2 = ""着""           ' Q" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    If data.Mileage <> """" Then ws.Cells(r + 1, 7).Value2 = CLng(data.Mileage) ' G: 走行距離" & vbCrLf
+    s = s & "    If data.Supplier  <> """" Then ws.Cells(r+1,  2).Value2 = data.Supplier" & vbCrLf
+    s = s & "    If data.LotNumber <> """" Then ws.Cells(r+1,  3).Value2 = data.LotNumber" & vbCrLf
+    s = s & "    If data.Color     <> """" Then ws.Cells(r+1,  4).Value2 = data.Color" & vbCrLf
+    s = s & "    If data.Chassis   <> """" Then ws.Cells(r+1,  6).Value2 = data.Chassis" & vbCrLf
+    s = s & "    If data.Mileage   <> """" Then ws.Cells(r+1,  7).Value2 = CLng(data.Mileage)" & vbCrLf
+    s = s & "    If data.Owner     <> """" Then ws.Cells(r+1, 16).Value2 = data.Owner" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "' 売上データを既存行に書き込み（仕入番号で行を特定）" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "Sub WriteToSheetSales(ws As Worksheet, data As SaleData)" & vbCrLf
+    s = s & "    Dim r As Long" & vbCrLf
+    s = s & "    r = FindCarRow(ws, data.CarNumber)" & vbCrLf
+    s = s & "    If r = 0 Then" & vbCrLf
+    s = s & "        MsgBox ""仕入番号 "" & data.CarNumber & "" が見つかりません。"", vbExclamation" & vbCrLf
+    s = s & "        Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    If data.Meigi       <> """" Then ws.Cells(r,   21).Value2 = data.Meigi" & vbCrLf
+    s = s & "    If data.SaleDate    <> """" Then ws.Cells(r,   22).Value2 = data.SaleDate" & vbCrLf
+    s = s & "    If data.Buyer       <> """" Then ws.Cells(r+1, 22).Value2 = data.Buyer" & vbCrLf
+    s = s & "    If data.SaleSession <> """" Then ws.Cells(r,   23).Value2 = data.SaleSession" & vbCrLf
+    s = s & "    If data.SaleLot     <> """" Then ws.Cells(r+1, 23).Value2 = data.SaleLot" & vbCrLf
+    s = s & "    If data.SalePrice   <> """" Then ws.Cells(r,   24).Value2 = CLng(data.SalePrice)" & vbCrLf
+    s = s & "    If data.SaleTax     <> """" Then ws.Cells(r,   25).Value2 = CLng(data.SaleTax)" & vbCrLf
+    s = s & "    If data.SaleRecycle <> """" Then ws.Cells(r,   26).Value2 = CLng(data.SaleRecycle)" & vbCrLf
+    s = s & "    If data.SaleTotal   <> """" Then ws.Cells(r,   27).Value2 = CLng(data.SaleTotal)" & vbCrLf
+    s = s & "    If data.PaymentDate <> """" Then ws.Cells(r,   28).Value2 = data.PaymentDate" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
@@ -322,24 +398,14 @@ Private Function GetMMainCode() As String
     s = s & "' ============================================================" & vbCrLf
     s = s & "Sub MoveToProcessed(filePath As String)" & vbCrLf
     s = s & "    On Error GoTo ErrHandler" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    Dim folder    As String" & vbCrLf
-    s = s & "    Dim fileName  As String" & vbCrLf
-    s = s & "    Dim processed As String" & vbCrLf
-    s = s & "    Dim dest      As String" & vbCrLf
-    s = s & "" & vbCrLf
+    s = s & "    Dim folder As String, fileName As String, processed As String, dest As String" & vbCrLf
     s = s & "    folder    = Left(filePath, InStrRev(filePath, ""\""))" & vbCrLf
     s = s & "    fileName  = Mid(filePath, InStrRev(filePath, ""\"") + 1)" & vbCrLf
     s = s & "    processed = folder & ""処理済み\""" & vbCrLf
     s = s & "    dest      = processed & fileName" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    If Dir(processed, vbDirectory) = """" Then MkDir processed" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    If Dir(dest) <> """" Then" & vbCrLf
-    s = s & "        Dim dot  As Integer" & vbCrLf
-    s = s & "        Dim base As String" & vbCrLf
-    s = s & "        Dim ext  As String" & vbCrLf
-    s = s & "        Dim cnt  As Integer" & vbCrLf
+    s = s & "        Dim dot As Integer, base As String, ext As String, cnt As Integer" & vbCrLf
     s = s & "        dot  = InStrRev(fileName, ""."")" & vbCrLf
     s = s & "        base = Left(fileName, dot - 1)" & vbCrLf
     s = s & "        ext  = Mid(fileName, dot)" & vbCrLf
@@ -349,14 +415,11 @@ Private Function GetMMainCode() As String
     s = s & "        Loop" & vbCrLf
     s = s & "        dest = processed & base & ""_"" & cnt & ext" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    FileCopy filePath, dest" & vbCrLf
     s = s & "    Kill filePath" & vbCrLf
     s = s & "    Exit Sub" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "ErrHandler:" & vbCrLf
-    s = s & "    MsgBox ""ファイル移動に失敗しました:"" & vbCrLf & filePath & vbCrLf & _" & vbCrLf
-    s = s & "           Err.Description, vbExclamation" & vbCrLf
+    s = s & "    MsgBox ""ファイル移動に失敗しました:"" & vbCrLf & filePath & vbCrLf & Err.Description, vbExclamation" & vbCrLf
     s = s & "End Sub" & vbCrLf
     GetMMainCode = s
 End Function
@@ -492,35 +555,37 @@ Private Function GetFrmInputCode() As String
     s = s & "Private m_Idx     As Integer" & vbCrLf
     s = s & "Private m_Main    As Integer" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' 初期化: 全画像配列 + 取込対象インデックス" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
     s = s & "Public Sub SetupForm(files() As String, mainIdx As Integer)" & vbCrLf
     s = s & "    m_Files = files" & vbCrLf
     s = s & "    m_Count = UBound(files) - LBound(files) + 1" & vbCrLf
     s = s & "    m_Idx   = mainIdx" & vbCrLf
     s = s & "    m_Main  = mainIdx" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    RefreshImage" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    ' === AI-OCR ここから（API課金のため無効化中）===" & vbCrLf
     s = s & "    ' Dim d As CarData" & vbCrLf
     s = s & "    ' d = CallClaudeOCR(m_Files(m_Main))" & vbCrLf
-    s = s & "    ' txtCarName.Text      = d.CarName" & vbCrLf
-    s = s & "    ' txtYear.Text         = d.YearMonth" & vbCrLf
-    s = s & "    ' txtColor.Text        = d.Color" & vbCrLf
-    s = s & "    ' txtChassis.Text      = d.Chassis" & vbCrLf
-    s = s & "    ' txtScore.Text        = d.Score" & vbCrLf
-    s = s & "    ' txtMileage.Text      = d.Mileage" & vbCrLf
-    s = s & "    ' txtPrice.Text        = d.Price" & vbCrLf
-    s = s & "    ' txtTax.Text          = d.Tax" & vbCrLf
-    s = s & "    ' txtCarTax.Text       = d.CarTax" & vbCrLf
-    s = s & "    ' txtRecycle.Text      = d.Recycle" & vbCrLf
-    s = s & "    ' txtFee.Text          = d.AuctionFee" & vbCrLf
-    s = s & "    ' txtVenue.Text        = d.Venue" & vbCrLf
-    s = s & "    ' txtLotNum.Text       = d.LotNumber" & vbCrLf
-    s = s & "    ' txtSession.Text      = d.Session" & vbCrLf
-    s = s & "    ' txtShaken.Text       = d.Shaken" & vbCrLf
+    s = s & "    ' txtDate.Text        = d.PurchaseDate" & vbCrLf
+    s = s & "    ' txtSession.Text     = d.Session" & vbCrLf
+    s = s & "    ' txtCarName.Text     = d.CarName" & vbCrLf
+    s = s & "    ' txtYear.Text        = d.YearMonth" & vbCrLf
+    s = s & "    ' txtShaken.Text      = d.Shaken" & vbCrLf
+    s = s & "    ' txtColor.Text       = d.Color" & vbCrLf
+    s = s & "    ' txtChassis.Text     = d.Chassis" & vbCrLf
+    s = s & "    ' txtScore.Text       = d.Score" & vbCrLf
+    s = s & "    ' txtMileage.Text     = d.Mileage" & vbCrLf
+    s = s & "    ' txtPrice.Text       = d.Price" & vbCrLf
+    s = s & "    ' txtTax.Text         = d.Tax" & vbCrLf
+    s = s & "    ' txtCarTax.Text      = d.CarTax" & vbCrLf
+    s = s & "    ' txtRecycle.Text     = d.Recycle" & vbCrLf
+    s = s & "    ' txtFee.Text         = d.AuctionFee" & vbCrLf
+    s = s & "    ' txtTotal.Text       = d.Total" & vbCrLf
+    s = s & "    ' txtLoss.Text        = d.Loss" & vbCrLf
+    s = s & "    ' txtSupplier.Text    = d.Supplier" & vbCrLf
+    s = s & "    ' txtLotNum.Text      = d.LotNumber" & vbCrLf
+    s = s & "    ' txtPlate.Text       = d.Plate" & vbCrLf
+    s = s & "    ' txtOwner.Text       = d.Owner" & vbCrLf
+    s = s & "    ' txtMemo.Text        = d.Memo" & vbCrLf
     s = s & "    ' === AI-OCR ここまで ===" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    ' --- デフォルト値（AIが有効になったら削除） ---" & vbCrLf
@@ -538,8 +603,13 @@ Private Function GetFrmInputCode() As String
     s = s & "    txtCarTax.Text   = ""35400""" & vbCrLf
     s = s & "    txtRecycle.Text  = ""12000""" & vbCrLf
     s = s & "    txtFee.Text      = ""32000""" & vbCrLf
-    s = s & "    txtVenue.Text    = ""USS大阪""" & vbCrLf
+    s = s & "    txtTotal.Text    = """"" & vbCrLf
+    s = s & "    txtLoss.Text     = """"" & vbCrLf
+    s = s & "    txtSupplier.Text = ""USS大阪""" & vbCrLf
     s = s & "    txtLotNum.Text   = ""12345""" & vbCrLf
+    s = s & "    txtPlate.Text    = """"" & vbCrLf
+    s = s & "    txtOwner.Text    = """"" & vbCrLf
+    s = s & "    txtMemo.Text     = """"" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub RefreshImage()" & vbCrLf
@@ -561,27 +631,29 @@ Private Function GetFrmInputCode() As String
     s = s & "    If m_Idx < m_Count - 1 Then m_Idx = m_Idx + 1 : RefreshImage" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' 入力値を CarData で返す（列に1:1対応）" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
     s = s & "Public Function GetData() As CarData" & vbCrLf
     s = s & "    Dim data As CarData" & vbCrLf
-    s = s & "    data.PurchaseDate = Trim(txtDate.Text)     ' B1: 仕入れ日" & vbCrLf
-    s = s & "    data.Session      = Trim(txtSession.Text)  ' C1: 回次" & vbCrLf
-    s = s & "    data.CarName      = Trim(txtCarName.Text)  ' F1: 車名" & vbCrLf
-    s = s & "    data.YearMonth    = Trim(txtYear.Text)     ' D1: 年式/月" & vbCrLf
-    s = s & "    data.Shaken       = Trim(txtShaken.Text)   ' G1: 車検" & vbCrLf
-    s = s & "    data.Score        = Trim(txtScore.Text)    ' H:  評価点" & vbCrLf
-    s = s & "    data.Price        = Trim(txtPrice.Text)    ' I:  車輌代" & vbCrLf
-    s = s & "    data.Tax          = Trim(txtTax.Text)      ' J:  消費税" & vbCrLf
-    s = s & "    data.CarTax       = Trim(txtCarTax.Text)   ' K:  自税" & vbCrLf
-    s = s & "    data.Recycle      = Trim(txtRecycle.Text)  ' L:  リサイクル" & vbCrLf
-    s = s & "    data.AuctionFee   = Trim(txtFee.Text)      ' M:  落札料" & vbCrLf
-    s = s & "    data.Venue        = Trim(txtVenue.Text)    ' B2: 仕入れ先" & vbCrLf
-    s = s & "    data.LotNumber    = Trim(txtLotNum.Text)   ' C2: 出品番号" & vbCrLf
-    s = s & "    data.Color        = Trim(txtColor.Text)    ' D2: 色" & vbCrLf
-    s = s & "    data.Chassis      = Trim(txtChassis.Text)  ' F2: 車台番号" & vbCrLf
-    s = s & "    data.Mileage      = Trim(txtMileage.Text)  ' G2: 走行距離" & vbCrLf
+    s = s & "    data.PurchaseDate = Trim(txtDate.Text)        ' B1: 仕入れ日" & vbCrLf
+    s = s & "    data.Session      = Trim(txtSession.Text)     ' C1: 回次" & vbCrLf
+    s = s & "    data.CarName      = Trim(txtCarName.Text)     ' F1: 車名" & vbCrLf
+    s = s & "    data.YearMonth    = Trim(txtYear.Text)        ' D1: 年式/月" & vbCrLf
+    s = s & "    data.Shaken       = Trim(txtShaken.Text)      ' G1: 車検" & vbCrLf
+    s = s & "    data.Score        = Trim(txtScore.Text)       ' H:  評価点" & vbCrLf
+    s = s & "    data.Price        = Trim(txtPrice.Text)       ' I:  車輌代" & vbCrLf
+    s = s & "    data.Tax          = Trim(txtTax.Text)         ' J:  消費税" & vbCrLf
+    s = s & "    data.CarTax       = Trim(txtCarTax.Text)      ' K:  自税" & vbCrLf
+    s = s & "    data.Recycle      = Trim(txtRecycle.Text)     ' L:  リサイクル" & vbCrLf
+    s = s & "    data.AuctionFee   = Trim(txtFee.Text)         ' M:  落札料" & vbCrLf
+    s = s & "    data.Total        = Trim(txtTotal.Text)       ' N:  合計" & vbCrLf
+    s = s & "    data.Loss         = Trim(txtLoss.Text)        ' O:  評価損" & vbCrLf
+    s = s & "    data.Plate        = Trim(txtPlate.Text)       ' P1: 車輌番号" & vbCrLf
+    s = s & "    data.Supplier     = Trim(txtSupplier.Text)    ' B2: 仕入れ先" & vbCrLf
+    s = s & "    data.LotNumber    = Trim(txtLotNum.Text)      ' C2: 出品番号" & vbCrLf
+    s = s & "    data.Color        = Trim(txtColor.Text)       ' D2: 色" & vbCrLf
+    s = s & "    data.Chassis      = Trim(txtChassis.Text)     ' F2: 車台番号" & vbCrLf
+    s = s & "    data.Mileage      = Trim(txtMileage.Text)     ' G2: 走行距離" & vbCrLf
+    s = s & "    data.Owner        = Trim(txtOwner.Text)       ' P2: 所有者" & vbCrLf
+    s = s & "    data.Memo         = Trim(txtMemo.Text)        ' T:  補足" & vbCrLf
     s = s & "    GetData = data" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
@@ -601,5 +673,53 @@ Private Function GetFrmInputCode() As String
     s = s & "    End If" & vbCrLf
     s = s & "End Sub" & vbCrLf
     GetFrmInputCode = s
+End Function
+
+Private Function GetFrmSalesCode() As String
+    Dim s As String
+    s = s & "Option Explicit" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub UserForm_Initialize()" & vbCrLf
+    s = s & "    txtSheetName.Text = g_SheetName" & vbCrLf
+    s = s & "    txtSaleDate.Text  = Format(Now, ""yyyy/m/d"")" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub btnOK_Click()" & vbCrLf
+    s = s & "    If Trim(txtCarNum.Text) = """" Then" & vbCrLf
+    s = s & "        MsgBox ""仕入番号を入力してください。"", vbExclamation" & vbCrLf
+    s = s & "        txtCarNum.SetFocus : Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim ws As Worksheet" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    Set ws = ThisWorkbook.Sheets(Trim(txtSheetName.Text))" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    If ws Is Nothing Then" & vbCrLf
+    s = s & "        MsgBox ""シート「"" & txtSheetName.Text & ""」が見つかりません。"", vbExclamation : Exit Sub" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    Dim data As SaleData" & vbCrLf
+    s = s & "    data.CarNumber   = Trim(txtCarNum.Text)" & vbCrLf
+    s = s & "    data.Meigi       = Trim(txtMeigi.Text)" & vbCrLf
+    s = s & "    data.SaleDate    = Trim(txtSaleDate.Text)" & vbCrLf
+    s = s & "    data.Buyer       = Trim(txtBuyer.Text)" & vbCrLf
+    s = s & "    data.SaleSession = Trim(txtSaleSession.Text)" & vbCrLf
+    s = s & "    data.SaleLot     = Trim(txtSaleLot.Text)" & vbCrLf
+    s = s & "    data.SalePrice   = Trim(txtSalePrice.Text)" & vbCrLf
+    s = s & "    data.SaleTax     = Trim(txtSaleTax.Text)" & vbCrLf
+    s = s & "    data.SaleRecycle = Trim(txtSaleRecycle.Text)" & vbCrLf
+    s = s & "    data.SaleTotal   = Trim(txtSaleTotal.Text)" & vbCrLf
+    s = s & "    data.PaymentDate = Trim(txtPayDate.Text)" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    WriteToSheetSales ws, data" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "    MsgBox data.CarNumber & "" の売上を登録しました。"", vbInformation" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub btnCancel_Click()" & vbCrLf
+    s = s & "    Unload Me" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    GetFrmSalesCode = s
 End Function
 
