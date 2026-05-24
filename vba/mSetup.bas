@@ -252,21 +252,19 @@ Private Function GetMMainCode() As String
     s = s & "End Type" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' 仕入れ入力エントリ（画像フォルダから）" & vbCrLf
+    s = s & "' エントリポイント（仕入れ / 売上 を選択）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Sub Main()" & vbCrLf
     s = s & "    g_SheetName  = ""27期""" & vbCrLf
     s = s & "    g_FolderPath = """"" & vbCrLf
     s = s & "    g_Cancelled  = False" & vbCrLf
-    s = s & "    frmSettings.Show" & vbCrLf
-    s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' 売上入力エントリ" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "Sub Main_Sales()" & vbCrLf
-    s = s & "    g_SheetName = ""27期""" & vbCrLf
-    s = s & "    frmSales.Show" & vbCrLf
+    s = s & "    Select Case MsgBox(""【はい】仕入れ登録（画像フォルダから）"" & vbCrLf & _" & vbCrLf
+    s = s & "                       ""【いいえ】売上登録（仕入番号を指定）"", _" & vbCrLf
+    s = s & "                       vbYesNoCancel + vbQuestion, ""在庫管理"")" & vbCrLf
+    s = s & "        Case vbYes    : frmSettings.Show" & vbCrLf
+    s = s & "        Case vbNo     : frmSales.Show" & vbCrLf
+    s = s & "    End Select" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf

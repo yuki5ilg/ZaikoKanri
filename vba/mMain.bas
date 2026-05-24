@@ -51,21 +51,19 @@ Public Type SaleData
 End Type
 
 ' ============================================================
-' 仕入れ入力エントリ（画像フォルダから）
+' エントリポイント（仕入れ / 売上 を選択）
 ' ============================================================
 Sub Main()
     g_SheetName  = "27期"
     g_FolderPath = ""
     g_Cancelled  = False
-    frmSettings.Show
-End Sub
 
-' ============================================================
-' 売上入力エントリ
-' ============================================================
-Sub Main_Sales()
-    g_SheetName = "27期"
-    frmSales.Show
+    Select Case MsgBox("【はい】仕入れ登録（画像フォルダから）" & vbCrLf & _
+                       "【いいえ】売上登録（仕入番号を指定）", _
+                       vbYesNoCancel + vbQuestion, "在庫管理")
+        Case vbYes    : frmSettings.Show
+        Case vbNo     : frmSales.Show
+    End Select
 End Sub
 
 ' ============================================================
