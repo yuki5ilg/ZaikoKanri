@@ -3,7 +3,6 @@ Option Explicit
 
 Public g_SheetName  As String
 Public g_FolderPath As String
-Public g_Cancelled  As Boolean
 
 ' ============================================================
 ' 仕入れデータ（列 A-T）
@@ -37,7 +36,7 @@ End Type
 ' 売上データ（列 U-AB）
 ' ============================================================
 Public Type SaleData
-    CarNumber   As String   ' A:  仕入番号（検索キー）
+    CarNumber   As String   ' 仕入番号（検索キー）
     Meigi       As String   ' U:  名義変更
     SaleDate    As String   ' V1: 売上日
     Buyer       As String   ' V2: 売上先
@@ -51,23 +50,16 @@ Public Type SaleData
 End Type
 
 ' ============================================================
-' エントリポイント（仕入れ / 売上 を選択）
+' エントリポイント
 ' ============================================================
 Sub Main()
     g_SheetName  = "27期"
     g_FolderPath = ""
-    g_Cancelled  = False
-
-    Select Case MsgBox("【はい】仕入れ登録（画像フォルダから）" & vbCrLf & _
-                       "【いいえ】売上登録（仕入番号を指定）", _
-                       vbYesNoCancel + vbQuestion, "在庫管理")
-        Case vbYes    : frmSettings.Show
-        Case vbNo     : frmSales.Show
-    End Select
+    frmInput.Show
 End Sub
 
 ' ============================================================
-' A列を検索して連番の最大値+1を返す（例: 27-005 → 6）
+' A列連番の最大値+1を返す
 ' ============================================================
 Function GetNextNumber(ws As Worksheet) As Long
     Dim i As Long, maxNum As Long, cellVal As String, parts() As String
@@ -79,9 +71,8 @@ Function GetNextNumber(ws As Worksheet) As Long
         If InStr(cellVal, "-") > 0 And InStr(cellVal, "-") = InStrRev(cellVal, "-") Then
             parts = Split(cellVal, "-")
             If IsNumeric(parts(0)) And IsNumeric(parts(1)) Then
-                Dim num As Long
-                num = CLng(parts(1))
-                If num > maxNum Then maxNum = num
+                Dim n As Long : n = CLng(parts(1))
+                If n > maxNum Then maxNum = n
             End If
         End If
     Next i
@@ -89,7 +80,7 @@ Function GetNextNumber(ws As Worksheet) As Long
 End Function
 
 ' ============================================================
-' 次の書き込み先行番号を返す（Q列"着"を末尾として算出）
+' 次の書き込み行を返す（Q列"着"を末尾として算出）
 ' ============================================================
 Function GetNextWriteRow(ws As Worksheet) As Long
     Dim lastRow As Long, qVal As String
@@ -97,9 +88,9 @@ Function GetNextWriteRow(ws As Worksheet) As Long
     If lastRow < 10 Then GetNextWriteRow = 10 : Exit Function
     qVal = Trim(CStr(ws.Cells(lastRow, 17).Value2))
     Select Case qVal
-        Case "着"  : GetNextWriteRow = lastRow + 1
+        Case "着"   : GetNextWriteRow = lastRow + 1
         Case "予定" : GetNextWriteRow = lastRow + 2
-        Case Else  : GetNextWriteRow = lastRow + 1
+        Case Else   : GetNextWriteRow = lastRow + 1
     End Select
 End Function
 
@@ -136,11 +127,10 @@ Sub WriteToSheet(ws As Worksheet, data As CarData)
     Dim r As Long
     r = GetNextWriteRow(ws)
 
-    ' 行1
-    ws.Cells(r,  1).Value2 = data.CarNumber   ' A
-    ws.Cells(r,  4).Value2 = data.YearMonth   ' D
-    ws.Cells(r,  6).Value2 = data.CarName     ' F
-    ws.Cells(r, 17).Value2 = "予定"           ' Q
+    ws.Cells(r,  1).Value2 = data.CarNumber
+    ws.Cells(r,  4).Value2 = data.YearMonth
+    ws.Cells(r,  6).Value2 = data.CarName
+    ws.Cells(r, 17).Value2 = "予定"
 
     If data.PurchaseDate <> "" Then ws.Cells(r,  2).Value2 = data.PurchaseDate
     If data.Session      <> "" Then ws.Cells(r,  3).Value2 = data.Session
@@ -156,8 +146,7 @@ Sub WriteToSheet(ws As Worksheet, data As CarData)
     If data.Plate        <> "" Then ws.Cells(r, 16).Value2 = data.Plate
     If data.Memo         <> "" Then ws.Cells(r, 20).Value2 = data.Memo
 
-    ' 行2
-    ws.Cells(r+1, 17).Value2 = "着"           ' Q
+    ws.Cells(r+1, 17).Value2 = "着"
 
     If data.Supplier  <> "" Then ws.Cells(r+1,  2).Value2 = data.Supplier
     If data.LotNumber <> "" Then ws.Cells(r+1,  3).Value2 = data.LotNumber
@@ -168,15 +157,12 @@ Sub WriteToSheet(ws As Worksheet, data As CarData)
 End Sub
 
 ' ============================================================
-' 売上データを既存行に書き込み（仕入番号で行を特定）
+' 売上データを既存行に書き込み
 ' ============================================================
 Sub WriteToSheetSales(ws As Worksheet, data As SaleData)
     Dim r As Long
     r = FindCarRow(ws, data.CarNumber)
-    If r = 0 Then
-        MsgBox "仕入番号 " & data.CarNumber & " が見つかりません。", vbExclamation
-        Exit Sub
-    End If
+    If r = 0 Then Exit Sub
 
     If data.Meigi       <> "" Then ws.Cells(r,   21).Value2 = data.Meigi
     If data.SaleDate    <> "" Then ws.Cells(r,   22).Value2 = data.SaleDate
@@ -203,10 +189,8 @@ Sub MoveToProcessed(filePath As String)
     If Dir(processed, vbDirectory) = "" Then MkDir processed
     If Dir(dest) <> "" Then
         Dim dot As Integer, base As String, ext As String, cnt As Integer
-        dot  = InStrRev(fileName, ".")
-        base = Left(fileName, dot - 1)
-        ext  = Mid(fileName, dot)
-        cnt  = 1
+        dot = InStrRev(fileName, ".")
+        base = Left(fileName, dot - 1) : ext = Mid(fileName, dot) : cnt = 1
         Do While Dir(processed & base & "_" & cnt & ext) <> ""
             cnt = cnt + 1
         Loop
