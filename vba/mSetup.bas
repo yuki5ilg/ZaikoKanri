@@ -61,9 +61,10 @@ Private Sub RemoveComponent(vbProj As Object, compName As String)
 End Sub
 
 Private Sub BuildFrmInput(vbProj As Object)
-    Dim comp As Object, n As Long
+    Dim comp As Object, n As Long, i As Long
     Set comp = vbProj.VBComponents.Add(VBEXT_CT_MSFORM)
     comp.Name = "frmInput"
+    For i = 1 To 30 : DoEvents : Next i
     n = comp.CodeModule.CountOfLines
     If n > 0 Then comp.CodeModule.DeleteLines 1, n
     comp.CodeModule.AddFromString GetFrmInputCode()
