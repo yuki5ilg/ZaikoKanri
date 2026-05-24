@@ -9,52 +9,39 @@ Option Explicit
 '   「VBAプロジェクト オブジェクト モデルへのアクセスを信頼する」にチェック
 '
 ' 【使い方】
-'   Alt+F8 → Setup を実行
-'   → mMain / frmSettings / frmInput が自動作成されます
-'   → 続けて Alt+F8 → Main を実行
+'   1. このファイルをインポート
+'   2. Alt+F8 → Setup を実行
+'   3. Alt+F8 → Main を実行
 ' ============================================================
 
 Private Const VBEXT_CT_STDMODULE As Long = 1
 Private Const VBEXT_CT_MSFORM    As Long = 3
 
-' ============================================================
-' エントリポイント
-' ============================================================
 Public Sub Setup()
     On Error GoTo ErrHandler
 
     Dim vbProj As Object
     Set vbProj = ThisWorkbook.VBProject
 
-    ' --- 既存コンポーネントを削除 ---
     RemoveComponent vbProj, "mMain"
     RemoveComponent vbProj, "frmSettings"
     RemoveComponent vbProj, "frmInput"
 
-    ' --- mMain（標準モジュール）作成 ---
     Dim mMain As Object
     Set mMain = vbProj.VBComponents.Add(VBEXT_CT_STDMODULE)
     mMain.Name = "mMain"
     mMain.CodeModule.AddFromString GetMMainCode()
 
-    ' --- frmSettings（UserForm）作成 ---
     BuildFrmSettings vbProj
-
-    ' --- frmInput（UserForm）作成 ---
     BuildFrmInput vbProj
 
-    MsgBox "セットアップ完了！" & vbCrLf & _
-           "Alt+F8 → Main を実行してください。", vbInformation
+    MsgBox "セットアップ完了！" & vbCrLf & "Alt+F8 → Main を実行してください。", vbInformation
     Exit Sub
 
 ErrHandler:
-    MsgBox "セットアップ失敗:" & vbCrLf & _
-           Err.Number & " - " & Err.Description, vbCritical
+    MsgBox "セットアップ失敗:" & vbCrLf & Err.Number & " - " & Err.Description, vbCritical
 End Sub
 
-' ============================================================
-' 既存コンポーネント削除
-' ============================================================
 Private Sub RemoveComponent(vbProj As Object, compName As String)
     Dim comp As Object
     On Error Resume Next
@@ -63,9 +50,6 @@ Private Sub RemoveComponent(vbProj As Object, compName As String)
     On Error GoTo 0
 End Sub
 
-' ============================================================
-' Designer 取得（リトライ付き）
-' ============================================================
 Private Function GetDesigner(comp As Object) As Object
     Dim i As Integer
     Application.VBE.MainWindow.Visible = True
@@ -84,14 +68,11 @@ Private Function GetDesigner(comp As Object) As Object
               "「VBAプロジェクト オブジェクト モデルへのアクセスを信頼する」が有効か確認してください。"
 End Function
 
-' ============================================================
-' コントロール追加ヘルパー
-' ============================================================
-Private Function AddCtl(designer As Object, progID As String, name As String, _
+Private Function AddCtl(d As Object, progID As String, name As String, _
                         L As Single, T As Single, W As Single, H As Single, _
                         Optional caption As String = "") As Object
     Dim c As Object
-    Set c = designer.Controls.Add(progID, name)
+    Set c = d.Controls.Add(progID, name)
     c.Left = L : c.Top = T : c.Width = W : c.Height = H
     On Error Resume Next
     If caption <> "" Then c.Caption = caption
@@ -99,34 +80,28 @@ Private Function AddCtl(designer As Object, progID As String, name As String, _
     Set AddCtl = c
 End Function
 
-' ============================================================
-' frmSettings 構築
-' ============================================================
 Private Sub BuildFrmSettings(vbProj As Object)
     Dim comp As Object
     Set comp = vbProj.VBComponents.Add(VBEXT_CT_MSFORM)
     comp.Name = "frmSettings"
     comp.Properties("Caption") = "設定"
     comp.Properties("Width") = 300
-    comp.Properties("Height") = 180
+    comp.Properties("Height") = 165
 
     Dim d As Object
     Set d = GetDesigner(comp)
 
-    AddCtl d, "Forms.Label.1",         "lblSheetName", 12,  12,  100, 18, "対象シート名"
-    AddCtl d, "Forms.TextBox.1",       "txtSheetName", 120, 10,  150, 20
-    AddCtl d, "Forms.Label.1",         "lblFolder",    12,  42,  100, 18, "画像フォルダ"
-    AddCtl d, "Forms.TextBox.1",       "txtFolder",    120, 40,  120, 20
-    AddCtl d, "Forms.CommandButton.1", "btnBrowse",    245, 40,  30,  20, "..."
-    AddCtl d, "Forms.CommandButton.1", "btnOK",        120, 100, 70,  25, "OK"
-    AddCtl d, "Forms.CommandButton.1", "btnCancel",    200, 100, 70,  25, "キャンセル"
+    AddCtl d, "Forms.Label.1",         "lblSheetName", 12, 12,  100, 18, "対象シート名"
+    AddCtl d, "Forms.TextBox.1",       "txtSheetName", 120, 10, 150, 20
+    AddCtl d, "Forms.Label.1",         "lblFolder",    12, 42,  100, 18, "画像フォルダ"
+    AddCtl d, "Forms.TextBox.1",       "txtFolder",    120, 40, 120, 20
+    AddCtl d, "Forms.CommandButton.1", "btnBrowse",    245, 40, 30,  20, "..."
+    AddCtl d, "Forms.CommandButton.1", "btnOK",        120, 95, 70,  25, "OK"
+    AddCtl d, "Forms.CommandButton.1", "btnCancel",    200, 95, 70,  25, "キャンセル"
 
     comp.CodeModule.AddFromString GetFrmSettingsCode()
 End Sub
 
-' ============================================================
-' frmInput 構築
-' ============================================================
 Private Sub BuildFrmInput(vbProj As Object)
     Dim comp As Object
     Set comp = vbProj.VBComponents.Add(VBEXT_CT_MSFORM)
@@ -138,38 +113,39 @@ Private Sub BuildFrmInput(vbProj As Object)
     Dim d As Object
     Set d = GetDesigner(comp)
 
-    ' 左ペイン：画像エリア
-    AddCtl d, "Forms.Label.1", "lblProgress", 250, 6,   80, 18, "1 / 1"
+    ' 左ペイン: 画像ナビ
+    AddCtl d, "Forms.Label.1",         "lblProgress",  6,   6,   280, 18, "1 / 1"
     Dim img As Object
-    Set img = AddCtl(d, "Forms.Image.1", "imgPreview", 6, 30, 280, 380)
+    Set img = AddCtl(d, "Forms.Image.1", "imgPreview",  6,   28,  280, 360)
     On Error Resume Next
-    img.PictureSizeMode = 3 ' fmPictureSizeModeZoom
+    img.PictureSizeMode = 3
     img.BorderStyle = 1
     On Error GoTo 0
-    AddCtl d, "Forms.Label.1", "lblFileName", 6, 415, 280, 18, ""
+    AddCtl d, "Forms.Label.1",         "lblFileName",  6,   392, 280, 18, ""
+    AddCtl d, "Forms.CommandButton.1", "btnPrev",      6,   414, 40,  22, "←"
+    AddCtl d, "Forms.CommandButton.1", "btnNext",      50,  414, 40,  22, "→"
 
-    ' 右ペイン：入力フォーム（ラベル+テキストペア）
+    ' 右ペイン: 入力フォーム（グレード・月は車名/年式に統合）
     Dim labels As Variant, names As Variant, i As Integer
-    labels = Array("車名", "グレード", "年式", "月", "色", "車台番号", "評価点", _
+    labels = Array("車名(グレード含む)", "年式/月", "色", "車台番号", "評価点", _
                    "走行距離(km)", "落札価格(円)", "消費税(円)", "自動車税(円)", _
                    "リサイクル(円)", "落札手数料(円)", "オークション会場", "出品番号")
-    names  = Array("CarName", "Grade", "Year", "Month", "Color", "Chassis", "Score", _
+    names  = Array("CarName", "Year", "Color", "Chassis", "Score", _
                    "Mileage", "Price", "Tax", "CarTax", "Recycle", "Fee", "Venue", "LotNum")
 
-    Dim baseLeft As Single, baseTop As Single, rowH As Single
-    baseLeft = 300 : baseTop = 30 : rowH = 24
+    Dim bL As Single, bT As Single, rH As Single
+    bL = 300 : bT = 28 : rH = 26
     For i = 0 To UBound(labels)
-        AddCtl d, "Forms.Label.1",   "lbl" & names(i), baseLeft,       baseTop + i * rowH, 90, 18, CStr(labels(i))
-        AddCtl d, "Forms.TextBox.1", "txt" & names(i), baseLeft + 95,  baseTop + i * rowH, 110, 20
+        AddCtl d, "Forms.Label.1",   "lbl" & names(i), bL,      bT + i * rH, 95, 18, CStr(labels(i))
+        AddCtl d, "Forms.TextBox.1", "txt" & names(i), bL + 98, bT + i * rH, 110, 20
     Next i
 
-    ' ボタン
-    Dim btnImp As Object, btnCan As Object
+    Dim btnImp As Object
     Set btnImp = AddCtl(d, "Forms.CommandButton.1", "btnImport", 300, 420, 100, 28, "取込")
     On Error Resume Next
     btnImp.Default = True
     On Error GoTo 0
-    Set btnCan = AddCtl(d, "Forms.CommandButton.1", "btnCancel", 410, 420, 100, 28, "中止")
+    AddCtl d, "Forms.CommandButton.1", "btnCancel", 410, 420, 100, 28, "中止"
 
     comp.CodeModule.AddFromString GetFrmInputCode()
 End Sub
@@ -377,25 +353,11 @@ Private Function GetFrmSettingsCode() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' frmSettings - 設定フォーム" & vbCrLf
-    s = s & "'" & vbCrLf
-    s = s & "' コントロール一覧（VBAデザイナーで作成）:" & vbCrLf
-    s = s & "'   Label        lblSheetName    Caption=""対象シート名""" & vbCrLf
-    s = s & "'   TextBox      txtSheetName    Text=""27期""" & vbCrLf
-    s = s & "'   Label        lblFolder       Caption=""画像フォルダ""" & vbCrLf
-    s = s & "'   TextBox      txtFolder       （幅広め）" & vbCrLf
-    s = s & "'   CommandButton btnBrowse      Caption=""参照...""" & vbCrLf
-    s = s & "'   CommandButton btnOK          Caption=""OK""" & vbCrLf
-    s = s & "'   CommandButton btnCancel      Caption=""キャンセル""" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "Private Sub UserForm_Initialize()" & vbCrLf
     s = s & "    txtSheetName.Text = g_SheetName" & vbCrLf
     s = s & "    txtFolder.Text    = g_FolderPath" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' フォルダ選択ダイアログ" & vbCrLf
     s = s & "Private Sub btnBrowse_Click()" & vbCrLf
     s = s & "    With Application.FileDialog(msoFileDialogFolderPicker)" & vbCrLf
     s = s & "        .Title = ""画像フォルダを選択してください""" & vbCrLf
@@ -440,13 +402,12 @@ Private Function GetFrmSettingsCode() As String
     s = s & "    g_FolderPath = Trim(txtFolder.Text)" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    ' --- 画像ファイル収集 ---" & vbCrLf
-    s = s & "    Dim fileList As New Collection" & vbCrLf
-    s = s & "    Dim exts(3)  As String" & vbCrLf
+    s = s & "    Dim exts(3) As String" & vbCrLf
     s = s & "    exts(0) = ""*.jpg"" : exts(1) = ""*.jpeg""" & vbCrLf
     s = s & "    exts(2) = ""*.png"" : exts(3) = ""*.bmp""" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    Dim i As Integer" & vbCrLf
-    s = s & "    Dim f As String" & vbCrLf
+    s = s & "    Dim fileList As New Collection" & vbCrLf
+    s = s & "    Dim i As Integer, f As String" & vbCrLf
     s = s & "    For i = 0 To 3" & vbCrLf
     s = s & "        f = Dir(g_FolderPath & ""\"" & exts(i))" & vbCrLf
     s = s & "        Do While f <> """"" & vbCrLf
@@ -460,40 +421,46 @@ Private Function GetFrmSettingsCode() As String
     s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
     s = s & "" & vbCrLf
+    s = s & "    ' --- Collection → 配列変換 ---" & vbCrLf
+    s = s & "    Dim files() As String" & vbCrLf
+    s = s & "    ReDim files(0 To fileList.Count - 1)" & vbCrLf
+    s = s & "    Dim j As Integer" & vbCrLf
+    s = s & "    j = 0" & vbCrLf
+    s = s & "    Dim item As Variant" & vbCrLf
+    s = s & "    For Each item In fileList" & vbCrLf
+    s = s & "        files(j) = CStr(item)" & vbCrLf
+    s = s & "        j = j + 1" & vbCrLf
+    s = s & "    Next item" & vbCrLf
+    s = s & "" & vbCrLf
     s = s & "    Me.Hide" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' --- 画像ごとに入力フォーム表示 ---" & vbCrLf
+    s = s & "    ' --- 1枚ずつ処理（1取込 = 1件追記） ---" & vbCrLf
     s = s & "    Dim processed As Integer" & vbCrLf
-    s = s & "    Dim total     As Integer" & vbCrLf
-    s = s & "    Dim item      As Variant" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    processed = 0" & vbCrLf
-    s = s & "    total     = fileList.Count" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    For Each item In fileList" & vbCrLf
-    s = s & "        frmInput.SetupForm CStr(item), processed + 1, total" & vbCrLf
+    s = s & "    For i = 0 To UBound(files)" & vbCrLf
+    s = s & "        frmInput.SetupForm files, i" & vbCrLf
     s = s & "        frmInput.Show vbModal" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "        If g_Cancelled Then" & vbCrLf
-    s = s & "            MsgBox ""処理を中止しました。（"" & processed & "" / "" & total & "" 枚完了）"", _" & vbCrLf
-    s = s & "                   vbInformation" & vbCrLf
+    s = s & "            MsgBox ""処理を中止しました。"" & vbCrLf & _" & vbCrLf
+    s = s & "                   processed & "" / "" & fileList.Count & "" 件処理済み"", vbInformation" & vbCrLf
     s = s & "            Unload frmInput" & vbCrLf
     s = s & "            Unload Me" & vbCrLf
     s = s & "            Exit Sub" & vbCrLf
     s = s & "        End If" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "        ' 管理番号をここで採番（書き込み直前）" & vbCrLf
     s = s & "        Dim data As CarData" & vbCrLf
     s = s & "        data           = frmInput.GetData()" & vbCrLf
     s = s & "        data.CarNumber = GetPeriodNumber(ws) & ""-"" & _" & vbCrLf
     s = s & "                         Format(GetNextNumber(ws), ""000"")" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "        WriteToSheet ws, data" & vbCrLf
-    s = s & "        MoveToProcessed CStr(item)" & vbCrLf
+    s = s & "        MoveToProcessed files(i)" & vbCrLf
     s = s & "        processed = processed + 1" & vbCrLf
-    s = s & "    Next item" & vbCrLf
+    s = s & "    Next i" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    MsgBox processed & ""枚の画像を処理しました。"", vbInformation" & vbCrLf
+    s = s & "    MsgBox processed & "" 件を処理しました。"", vbInformation" & vbCrLf
     s = s & "    Unload frmInput" & vbCrLf
     s = s & "    Unload Me" & vbCrLf
     s = s & "End Sub" & vbCrLf
@@ -508,59 +475,43 @@ Private Function GetFrmInputCode() As String
     Dim s As String
     s = s & "Option Explicit" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' frmInput - 画像プレビュー＋入力フォーム" & vbCrLf
-    s = s & "'" & vbCrLf
-    s = s & "' コントロール一覧（VBAデザイナーで作成）:" & vbCrLf
-    s = s & "'" & vbCrLf
-    s = s & "'   【左ペイン - 画像エリア】" & vbCrLf
-    s = s & "'   Label        lblProgress     Caption=""1 / 5""  （右上）" & vbCrLf
-    s = s & "'   Image        imgPreview      PictureSizeMode=3（Zoom）" & vbCrLf
-    s = s & "'   Label        lblFileName     Caption=""""" & vbCrLf
-    s = s & "'" & vbCrLf
-    s = s & "'   【右ペイン - 入力フォーム】" & vbCrLf
-    s = s & "'   ラベル/テキストボックスのペア（各行）:" & vbCrLf
-    s = s & "'     lblCarName    / txtCarName    「車名」" & vbCrLf
-    s = s & "'     lblGrade      / txtGrade      「グレード」" & vbCrLf
-    s = s & "'     lblYear       / txtYear       「年式」" & vbCrLf
-    s = s & "'     lblMonth      / txtMonth      「月」" & vbCrLf
-    s = s & "'     lblColor      / txtColor      「色」" & vbCrLf
-    s = s & "'     lblChassis    / txtChassis    「車台番号」" & vbCrLf
-    s = s & "'     lblScore      / txtScore      「評価点」" & vbCrLf
-    s = s & "'     lblMileage    / txtMileage    「走行距離(km)」" & vbCrLf
-    s = s & "'     lblPrice      / txtPrice      「落札価格(円)」" & vbCrLf
-    s = s & "'     lblTax        / txtTax        「消費税(円)」" & vbCrLf
-    s = s & "'     lblCarTax     / txtCarTax     「自動車税(円)」" & vbCrLf
-    s = s & "'     lblRecycle    / txtRecycle    「リサイクル料(円)」" & vbCrLf
-    s = s & "'     lblFee        / txtFee        「落札手数料(円)」" & vbCrLf
-    s = s & "'     lblVenue      / txtVenue      「オークション会場」" & vbCrLf
-    s = s & "'     lblLotNum     / txtLotNum     「出品番号」" & vbCrLf
-    s = s & "'" & vbCrLf
-    s = s & "'   【ボタン】" & vbCrLf
-    s = s & "'   CommandButton btnImport   Caption=""取込""  （Default=True）" & vbCrLf
-    s = s & "'   CommandButton btnCancel   Caption=""中止""" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
+    s = s & "Private m_Files() As String" & vbCrLf
+    s = s & "Private m_Count   As Integer" & vbCrLf
+    s = s & "Private m_Idx     As Integer" & vbCrLf
+    s = s & "Private m_Main    As Integer   ' 取込対象のインデックス（ナビで変わらない）" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' 初期化：画像・進捗・ダミーデフォルト値をセット" & vbCrLf
+    s = s & "' 初期化: 全画像配列 + 今回の取込対象インデックス" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "Public Sub SetupForm(filePath As String, current As Integer, total As Integer)" & vbCrLf
-    s = s & "    ' 進捗" & vbCrLf
-    s = s & "    lblProgress.Caption = current & "" / "" & total" & vbCrLf
+    s = s & "Public Sub SetupForm(files() As String, mainIdx As Integer)" & vbCrLf
+    s = s & "    m_Files = files" & vbCrLf
+    s = s & "    m_Count = UBound(files) - LBound(files) + 1" & vbCrLf
+    s = s & "    m_Idx   = mainIdx" & vbCrLf
+    s = s & "    m_Main  = mainIdx" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' ファイル名" & vbCrLf
-    s = s & "    lblFileName.Caption = Mid(filePath, InStrRev(filePath, ""\"") + 1)" & vbCrLf
+    s = s & "    RefreshImage" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' 画像プレビュー（読み込み失敗しても続行）" & vbCrLf
-    s = s & "    On Error Resume Next" & vbCrLf
-    s = s & "    imgPreview.Picture = LoadPicture(filePath)" & vbCrLf
-    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "    ' === AI-OCR ここから（API課金のため無効化中）===" & vbCrLf
+    s = s & "    ' Dim d As CarData" & vbCrLf
+    s = s & "    ' d = CallClaudeOCR(m_Files(m_Main))" & vbCrLf
+    s = s & "    ' txtCarName.Text  = d.CarName   ' 車名（グレード含む）" & vbCrLf
+    s = s & "    ' txtYear.Text     = d.YearMonth ' 年式/月（例: 2021/7）" & vbCrLf
+    s = s & "    ' txtColor.Text    = d.Color" & vbCrLf
+    s = s & "    ' txtChassis.Text  = d.Chassis" & vbCrLf
+    s = s & "    ' txtScore.Text    = d.Score" & vbCrLf
+    s = s & "    ' txtMileage.Text  = d.Mileage" & vbCrLf
+    s = s & "    ' txtPrice.Text    = d.Price" & vbCrLf
+    s = s & "    ' txtTax.Text      = d.Tax" & vbCrLf
+    s = s & "    ' txtCarTax.Text   = d.CarTax" & vbCrLf
+    s = s & "    ' txtRecycle.Text  = d.Recycle" & vbCrLf
+    s = s & "    ' txtFee.Text      = d.AuctionFee" & vbCrLf
+    s = s & "    ' txtVenue.Text    = d.Venue" & vbCrLf
+    s = s & "    ' txtLotNum.Text   = d.LotNumber" & vbCrLf
+    s = s & "    ' === AI-OCR ここまで ===" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    ' ダミーデフォルト値" & vbCrLf
-    s = s & "    txtCarName.Text  = ""スズキ""" & vbCrLf
-    s = s & "    txtGrade.Text    = ""クロスビー MZ""" & vbCrLf
-    s = s & "    txtYear.Text     = ""2021""" & vbCrLf
-    s = s & "    txtMonth.Text    = ""7""" & vbCrLf
+    s = s & "    ' --- デフォルト値（AIが有効になったら削除） ---" & vbCrLf
+    s = s & "    txtCarName.Text  = ""スズキ クロスビー MZ""" & vbCrLf
+    s = s & "    txtYear.Text     = ""2021/7""" & vbCrLf
     s = s & "    txtColor.Text    = ""ホワイトパール""" & vbCrLf
     s = s & "    txtChassis.Text  = ""MYN15S-100001""" & vbCrLf
     s = s & "    txtScore.Text    = ""4.5""" & vbCrLf
@@ -575,27 +526,38 @@ Private Function GetFrmInputCode() As String
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
-    s = s & "' 入力値をCarData型で返す" & vbCrLf
+    s = s & "' 画像表示更新（ナビ用。m_Idxが変わるだけ）" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "Private Sub RefreshImage()" & vbCrLf
+    s = s & "    If m_Count = 0 Then Exit Sub" & vbCrLf
+    s = s & "    Dim prefix As String" & vbCrLf
+    s = s & "    If m_Idx = m_Main Then" & vbCrLf
+    s = s & "        prefix = ""★ ""   ' 取込対象" & vbCrLf
+    s = s & "    Else" & vbCrLf
+    s = s & "        prefix = ""　""" & vbCrLf
+    s = s & "    End If" & vbCrLf
+    s = s & "    lblProgress.Caption = prefix & (m_Idx + 1) & "" / "" & m_Count" & vbCrLf
+    s = s & "    lblFileName.Caption = Mid(m_Files(m_Idx), InStrRev(m_Files(m_Idx), ""\"") + 1)" & vbCrLf
+    s = s & "    On Error Resume Next" & vbCrLf
+    s = s & "    imgPreview.Picture = LoadPicture(m_Files(m_Idx))" & vbCrLf
+    s = s & "    On Error GoTo 0" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub btnPrev_Click()" & vbCrLf
+    s = s & "    If m_Idx > 0 Then m_Idx = m_Idx - 1 : RefreshImage" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "Private Sub btnNext_Click()" & vbCrLf
+    s = s & "    If m_Idx < m_Count - 1 Then m_Idx = m_Idx + 1 : RefreshImage" & vbCrLf
+    s = s & "End Sub" & vbCrLf
+    s = s & "" & vbCrLf
+    s = s & "' ============================================================" & vbCrLf
+    s = s & "' 入力値を CarData で返す（グレード・月は統合済みのため不要）" & vbCrLf
     s = s & "' ============================================================" & vbCrLf
     s = s & "Public Function GetData() As CarData" & vbCrLf
     s = s & "    Dim data As CarData" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    ' 車名＋グレードを結合" & vbCrLf
-    s = s & "    Dim carName As String" & vbCrLf
-    s = s & "    carName = Trim(txtCarName.Text)" & vbCrLf
-    s = s & "    If Trim(txtGrade.Text) <> """" Then" & vbCrLf
-    s = s & "        carName = carName & "" "" & Trim(txtGrade.Text)" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    ' 年式/月を結合" & vbCrLf
-    s = s & "    Dim yearMonth As String" & vbCrLf
-    s = s & "    yearMonth = Trim(txtYear.Text)" & vbCrLf
-    s = s & "    If Trim(txtMonth.Text) <> """" Then" & vbCrLf
-    s = s & "        yearMonth = yearMonth & ""/"" & Trim(txtMonth.Text)" & vbCrLf
-    s = s & "    End If" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    data.YearMonth   = yearMonth" & vbCrLf
-    s = s & "    data.CarName     = carName" & vbCrLf
+    s = s & "    data.CarName     = Trim(txtCarName.Text)   ' 車名（グレード含む）" & vbCrLf
+    s = s & "    data.YearMonth   = Trim(txtYear.Text)      ' 年式/月（例: 2021/7）" & vbCrLf
     s = s & "    data.Score       = Trim(txtScore.Text)" & vbCrLf
     s = s & "    data.Price       = Trim(txtPrice.Text)" & vbCrLf
     s = s & "    data.Tax         = Trim(txtTax.Text)" & vbCrLf
@@ -607,22 +569,16 @@ Private Function GetFrmInputCode() As String
     s = s & "    data.Color       = Trim(txtColor.Text)" & vbCrLf
     s = s & "    data.Chassis     = Trim(txtChassis.Text)" & vbCrLf
     s = s & "    data.Mileage     = Trim(txtMileage.Text)" & vbCrLf
-    s = s & "" & vbCrLf
     s = s & "    GetData = data" & vbCrLf
     s = s & "End Function" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
-    s = s & "' ボタンイベント" & vbCrLf
-    s = s & "' ============================================================" & vbCrLf
     s = s & "Private Sub btnImport_Click()" & vbCrLf
-    s = s & "    ' 簡易バリデーション" & vbCrLf
     s = s & "    If Trim(txtCarName.Text) = """" Then" & vbCrLf
     s = s & "        MsgBox ""車名を入力してください。"", vbExclamation" & vbCrLf
     s = s & "        txtCarName.SetFocus" & vbCrLf
     s = s & "        Exit Sub" & vbCrLf
     s = s & "    End If" & vbCrLf
-    s = s & "" & vbCrLf
-    s = s & "    Me.Hide   ' 呼び出し元に制御を返す（Unloadはしない）" & vbCrLf
+    s = s & "    Me.Hide" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub btnCancel_Click()" & vbCrLf
