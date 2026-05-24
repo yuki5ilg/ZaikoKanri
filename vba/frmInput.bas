@@ -118,9 +118,9 @@ Private Function Btn(n As String, L As Single, T As Single, W As Single, H As Si
     Set Btn = c
 End Function
 
-Private Function CtlText(n As String) As String
+Private Property Get CtlText(n As String) As String
     CtlText = Me.Controls(n).Text
-End Function
+End Property
 
 Private Property Let CtlText(n As String, val As String)
     Me.Controls(n).Text = val
