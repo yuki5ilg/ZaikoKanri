@@ -21,6 +21,10 @@ Public Sub Setup()
     Dim step As String
     On Error GoTo ErrHandler
 
+    step = "0: VBE‰Šú‰»"
+    Application.VBE.MainWindow.Visible = True
+    DoEvents
+
     step = "1/5: VBProjectæ“¾"
     Dim vbProj As Object
     Set vbProj = ThisWorkbook.VBProject
