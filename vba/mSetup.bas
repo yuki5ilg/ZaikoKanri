@@ -83,16 +83,24 @@ Private Sub BuildFrmInput(vbProj As Object)
     Dim comp As Object
     Set comp = vbProj.VBComponents.Add(VBEXT_CT_MSFORM)
     comp.Name = "frmInput"
-    comp.Properties("Caption") = "在庫管理"
-    comp.Properties("Width")   = 640
-    comp.Properties("Height")  = 660
+
+    ' Properties へのアクセスは全て OERN で保護
     On Error Resume Next
-    comp.Properties("ScrollBars") = 2
+    comp.Properties("Caption")      = "在庫管理"
+    comp.Properties("Width")        = 640
+    comp.Properties("Height")       = 660
+    comp.Properties("ScrollBars")   = 2
     comp.Properties("ScrollHeight") = 980
     On Error GoTo 0
 
     Dim d As Object
     Set d = GetDesigner(comp)
+
+    ' Designer 経由でもサイズ設定（より確実）
+    On Error Resume Next
+    d.Width  = 640
+    d.Height = 660
+    On Error GoTo 0
 
     ' ── 上段: 設定 ──────────────────────────────────
     AddCtl d, "Forms.Label.1",         "lblSheetName", 8,  8, 70, 18, "シート名"
