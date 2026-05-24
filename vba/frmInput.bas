@@ -60,16 +60,16 @@ Private Sub CreateControls()
     bL = 312 : bT = 34 : rH = 24
 
     Dim bLbl As Variant, bName As Variant, i As Integer
-    bLbl  = Array("仕入れ日(B1)", "回次(C1)", "車名/グレード(F1)", "年式/月(D1)", _
-                  "車検(G1)", "評価点(H)", "車輌代(I)", "消費税(J)", _
-                  "自税(K)", "リサイクル(L)", "落札料(M)", "合計(N)", "評価損(O)", _
-                  "車輌番号(P1)", "仕入れ先(B2)", "出品番号(C2)", "色(D2)", _
-                  "車台番号(F2)", "走行距離km(G2)", "所有者(P2)", "補足(T)")
-    bName = Array("Date", "Session", "CarName", "Year", _
-                  "Shaken", "Score", "Price", "Tax", _
-                  "CarTax", "Recycle", "Fee", "Total", "Loss", _
-                  "Plate", "Supplier", "LotNum", "Color", _
-                  "Chassis", "Mileage", "Owner", "Memo")
+    bLbl  = Array("仕入れ日", "仕入れ先", "回次", "出品番号", _
+                  "年式", "色", "車体番号", "車台番号", _
+                  "車検", "距離km", "評価点", "車輌代", "消費税", "自税", _
+                  "リサイクル", "落札料", "合計", "評価損", _
+                  "車輌番号", "所有者", "付属品", "補足")
+    bName = Array("Date", "Supplier", "Session", "LotNum", _
+                  "Year", "Color", "CarName", "Chassis", _
+                  "Shaken", "Mileage", "Score", "Price", "Tax", "CarTax", _
+                  "Recycle", "Fee", "Total", "Loss", _
+                  "Plate", "Owner", "Accessories", "Memo")
 
     For i = 0 To UBound(bLbl)
         Lbl "lbl" & bName(i), bL,       bT + i * rH, 105, 18, CStr(bLbl(i))
@@ -80,9 +80,9 @@ Private Sub CreateControls()
     Lbl "lblSaleSep", bL, sepT, 220, 18, "── 売上 ──────────"
 
     Dim sLbl As Variant, sName As Variant
-    sLbl  = Array("名義変更(U)", "売上日(V1)", "売上先(V2)", "売上回次(W1)", _
-                  "売上出品番号(W2)", "売上車輌代(X)", "売上消費税(Y)", _
-                  "売上リサイクル(Z)", "売上合計(AA)", "入金日(AB)")
+    sLbl  = Array("名義変更", "売上日", "売上先", "回次", _
+                  "出品番号", "車輌代", "消費税", _
+                  "リサイクル", "合計", "入金日")
     sName = Array("Meigi", "SaleDate", "Buyer", "SaleSession", _
                   "SaleLot", "SalePrice", "SaleTax", _
                   "SaleRecycle", "SaleTotal", "PayDate")
@@ -268,6 +268,7 @@ Private Sub LoadDefaults()
     CtlText("txtChassis")     = "MYN15S-100001"
     CtlText("txtMileage")     = "35000"
     CtlText("txtOwner")       = ""
+    CtlText("txtAccessories") = ""
     CtlText("txtMemo")        = ""
     CtlText("txtMeigi")       = ""
     CtlText("txtSaleDate")    = ""
@@ -315,6 +316,7 @@ Private Function CollectCarData() As CarData
     d.Chassis      = Trim(CtlText("txtChassis"))
     d.Mileage      = Trim(CtlText("txtMileage"))
     d.Owner        = Trim(CtlText("txtOwner"))
+    d.Accessories  = Trim(CtlText("txtAccessories"))
     d.Memo         = Trim(CtlText("txtMemo"))
     CollectCarData = d
 End Function
