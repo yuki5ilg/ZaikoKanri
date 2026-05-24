@@ -100,7 +100,7 @@ Private Function GetMMainCode() As String
     s = s & "    Loss         As Variant  ' O:  評価損" & vbCrLf
     s = s & "    Plate        As String   ' P1: 車輌番号" & vbCrLf
     s = s & "    Owner        As String   ' P2: 所有者" & vbCrLf
-    s = s & "    Accessories  As String   ' Q:  付属品" & vbCrLf
+    s = s & "    Accessories  As String   ' S:  付属品(予定)" & vbCrLf
     s = s & "    Memo         As String   ' T:  補足" & vbCrLf
     s = s & "End Type" & vbCrLf
     s = s & "" & vbCrLf
@@ -192,7 +192,7 @@ Private Function GetMMainCode() As String
     s = s & "    If data.Total        <> """" Then ws.Cells(r, 14).Value2 = CLng(data.Total)" & vbCrLf
     s = s & "    If data.Loss         <> """" Then ws.Cells(r, 15).Value2 = CLng(data.Loss)" & vbCrLf
     s = s & "    If data.Plate        <> """" Then ws.Cells(r, 16).Value2 = data.Plate" & vbCrLf
-    s = s & "    If data.Accessories  <> """" Then ws.Cells(r, 17).Value2 = data.Accessories" & vbCrLf
+    s = s & "    If data.Accessories  <> """" Then ws.Cells(r, 19).Value2 = data.Accessories" & vbCrLf
     s = s & "    If data.Memo         <> """" Then ws.Cells(r, 20).Value2 = data.Memo" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    If data.Supplier  <> """" Then ws.Cells(r+1,  2).Value2 = data.Supplier" & vbCrLf
@@ -310,7 +310,7 @@ Private Function GetFrmInputCode() As String
     s = s & "" & vbCrLf
     s = s & "    Dim bLbl As Variant, bName As Variant, i As Integer" & vbCrLf
     s = s & "    bLbl  = Array(""仕入れ日"", ""仕入れ先"", ""回次"", ""出品番号"", _" & vbCrLf
-    s = s & "                  ""年式"", ""色"", ""車体番号"", ""車台番号"", _" & vbCrLf
+    s = s & "                  ""年式"", ""色"", ""車台番号①"", ""車台番号②"", _" & vbCrLf
     s = s & "                  ""車検"", ""距離km"", ""評価点"", ""車輌代"", ""消費税"", ""自税"", _" & vbCrLf
     s = s & "                  ""リサイクル"", ""落札料"", ""合計"", ""評価損"", _" & vbCrLf
     s = s & "                  ""車輌番号"", ""所有者"", ""付属品"", ""補足"")" & vbCrLf
@@ -329,12 +329,11 @@ Private Function GetFrmInputCode() As String
     s = s & "    Lbl ""lblSaleSep"", bL, sepT, 220, 18, ""── 売上 ──────────""" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Dim sLbl As Variant, sName As Variant" & vbCrLf
-    s = s & "    sLbl  = Array(""名義変更"", ""売上日"", ""売上先"", ""回次"", _" & vbCrLf
-    s = s & "                  ""出品番号"", ""車輌代"", ""消費税"", _" & vbCrLf
-    s = s & "                  ""リサイクル"", ""合計"", ""入金日"")" & vbCrLf
-    s = s & "    sName = Array(""Meigi"", ""SaleDate"", ""Buyer"", ""SaleSession"", _" & vbCrLf
-    s = s & "                  ""SaleLot"", ""SalePrice"", ""SaleTax"", _" & vbCrLf
-    s = s & "                  ""SaleRecycle"", ""SaleTotal"", ""PayDate"")" & vbCrLf
+    s = s & "    sLbl  = Array(""名義変更"")" & vbCrLf
+    s = s & "    sName = Array(""Meigi"")" & vbCrLf
+    s = s & "    ' 売上日以降は一時コメントアウト" & vbCrLf
+    s = s & "    '""売上日"", ""売上先"", ""回次"", ""出品番号"", ""車輌代"", ""消費税"", ""リサイクル"", ""合計"", ""入金日""" & vbCrLf
+    s = s & "    '""SaleDate"", ""Buyer"", ""SaleSession"", ""SaleLot"", ""SalePrice"", ""SaleTax"", ""SaleRecycle"", ""SaleTotal"", ""PayDate""" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    Dim salT As Single : salT = sepT + rH" & vbCrLf
     s = s & "    For i = 0 To UBound(sLbl)" & vbCrLf
@@ -469,12 +468,13 @@ Private Function GetFrmInputCode() As String
     s = s & "    data.CarNumber = GetPeriodNumber(ws) & ""-"" & Format(GetNextNumber(ws), ""000"")" & vbCrLf
     s = s & "    WriteToSheet ws, data" & vbCrLf
     s = s & "" & vbCrLf
-    s = s & "    If Trim(CtlText(""txtSaleDate"")) <> """" Then" & vbCrLf
+    s = s & "    If Trim(CtlText(""txtMeigi"")) <> """" Then" & vbCrLf
     s = s & "        Dim sd As SaleData" & vbCrLf
-    s = s & "        sd = CollectSaleData()" & vbCrLf
     s = s & "        sd.CarNumber = data.CarNumber" & vbCrLf
+    s = s & "        sd.Meigi     = Trim(CtlText(""txtMeigi""))" & vbCrLf
     s = s & "        WriteToSheetSales ws, sd" & vbCrLf
     s = s & "    End If" & vbCrLf
+    s = s & "    ' 売上日以降は一時コメントアウト中のため CollectSaleData() は使用しない" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "    MoveToProcessed m_Files(m_Idx)" & vbCrLf
     s = s & "    m_Idx = m_Idx + 1" & vbCrLf
@@ -520,15 +520,16 @@ Private Function GetFrmInputCode() As String
     s = s & "    CtlText(""txtAccessories"") = """"" & vbCrLf
     s = s & "    CtlText(""txtMemo"")        = """"" & vbCrLf
     s = s & "    CtlText(""txtMeigi"")       = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleDate"")    = """"" & vbCrLf
-    s = s & "    CtlText(""txtBuyer"")       = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleSession"") = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleLot"")     = """"" & vbCrLf
-    s = s & "    CtlText(""txtSalePrice"")   = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleTax"")     = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleRecycle"") = """"" & vbCrLf
-    s = s & "    CtlText(""txtSaleTotal"")   = """"" & vbCrLf
-    s = s & "    CtlText(""txtPayDate"")     = """"" & vbCrLf
+    s = s & "    ' 売上日以降は一時コメントアウト" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleDate"")    = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtBuyer"")       = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleSession"") = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleLot"")     = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSalePrice"")   = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleTax"")     = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleRecycle"") = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtSaleTotal"")   = """"" & vbCrLf
+    s = s & "    ' CtlText(""txtPayDate"")     = """"" & vbCrLf
     s = s & "End Sub" & vbCrLf
     s = s & "" & vbCrLf
     s = s & "Private Sub RefreshImage()" & vbCrLf
@@ -573,15 +574,16 @@ Private Function GetFrmInputCode() As String
     s = s & "Private Function CollectSaleData() As SaleData" & vbCrLf
     s = s & "    Dim d As SaleData" & vbCrLf
     s = s & "    d.Meigi       = Trim(CtlText(""txtMeigi""))" & vbCrLf
-    s = s & "    d.SaleDate    = Trim(CtlText(""txtSaleDate""))" & vbCrLf
-    s = s & "    d.Buyer       = Trim(CtlText(""txtBuyer""))" & vbCrLf
-    s = s & "    d.SaleSession = Trim(CtlText(""txtSaleSession""))" & vbCrLf
-    s = s & "    d.SaleLot     = Trim(CtlText(""txtSaleLot""))" & vbCrLf
-    s = s & "    d.SalePrice   = Trim(CtlText(""txtSalePrice""))" & vbCrLf
-    s = s & "    d.SaleTax     = Trim(CtlText(""txtSaleTax""))" & vbCrLf
-    s = s & "    d.SaleRecycle = Trim(CtlText(""txtSaleRecycle""))" & vbCrLf
-    s = s & "    d.SaleTotal   = Trim(CtlText(""txtSaleTotal""))" & vbCrLf
-    s = s & "    d.PaymentDate = Trim(CtlText(""txtPayDate""))" & vbCrLf
+    s = s & "    ' 売上日以降は一時コメントアウト" & vbCrLf
+    s = s & "    ' d.SaleDate    = Trim(CtlText(""txtSaleDate""))" & vbCrLf
+    s = s & "    ' d.Buyer       = Trim(CtlText(""txtBuyer""))" & vbCrLf
+    s = s & "    ' d.SaleSession = Trim(CtlText(""txtSaleSession""))" & vbCrLf
+    s = s & "    ' d.SaleLot     = Trim(CtlText(""txtSaleLot""))" & vbCrLf
+    s = s & "    ' d.SalePrice   = Trim(CtlText(""txtSalePrice""))" & vbCrLf
+    s = s & "    ' d.SaleTax     = Trim(CtlText(""txtSaleTax""))" & vbCrLf
+    s = s & "    ' d.SaleRecycle = Trim(CtlText(""txtSaleRecycle""))" & vbCrLf
+    s = s & "    ' d.SaleTotal   = Trim(CtlText(""txtSaleTotal""))" & vbCrLf
+    s = s & "    ' d.PaymentDate = Trim(CtlText(""txtPayDate""))" & vbCrLf
     s = s & "    CollectSaleData = d" & vbCrLf
     s = s & "End Function" & vbCrLf
     GetFrmInputCode = s

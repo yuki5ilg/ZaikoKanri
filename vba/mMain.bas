@@ -26,7 +26,7 @@ Public Type CarData
     Loss         As Variant  ' O:  評価損
     Plate        As String   ' P1: 車輌番号
     Owner        As String   ' P2: 所有者
-    Accessories  As String   ' Q:  付属品
+    Accessories  As String   ' S:  付属品(予定)
     Memo         As String   ' T:  補足
 End Type
 
@@ -118,7 +118,7 @@ Sub WriteToSheet(ws As Worksheet, data As CarData)
     If data.Total        <> "" Then ws.Cells(r, 14).Value2 = CLng(data.Total)
     If data.Loss         <> "" Then ws.Cells(r, 15).Value2 = CLng(data.Loss)
     If data.Plate        <> "" Then ws.Cells(r, 16).Value2 = data.Plate
-    If data.Accessories  <> "" Then ws.Cells(r, 17).Value2 = data.Accessories
+    If data.Accessories  <> "" Then ws.Cells(r, 19).Value2 = data.Accessories
     If data.Memo         <> "" Then ws.Cells(r, 20).Value2 = data.Memo
 
     If data.Supplier  <> "" Then ws.Cells(r+1,  2).Value2 = data.Supplier

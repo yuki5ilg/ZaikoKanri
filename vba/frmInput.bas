@@ -61,7 +61,7 @@ Private Sub CreateControls()
 
     Dim bLbl As Variant, bName As Variant, i As Integer
     bLbl  = Array("仕入れ日", "仕入れ先", "回次", "出品番号", _
-                  "年式", "色", "車体番号", "車台番号", _
+                  "年式", "色", "車台番号①", "車台番号②", _
                   "車検", "距離km", "評価点", "車輌代", "消費税", "自税", _
                   "リサイクル", "落札料", "合計", "評価損", _
                   "車輌番号", "所有者", "付属品", "補足")
@@ -80,12 +80,11 @@ Private Sub CreateControls()
     Lbl "lblSaleSep", bL, sepT, 220, 18, "── 売上 ──────────"
 
     Dim sLbl As Variant, sName As Variant
-    sLbl  = Array("名義変更", "売上日", "売上先", "回次", _
-                  "出品番号", "車輌代", "消費税", _
-                  "リサイクル", "合計", "入金日")
-    sName = Array("Meigi", "SaleDate", "Buyer", "SaleSession", _
-                  "SaleLot", "SalePrice", "SaleTax", _
-                  "SaleRecycle", "SaleTotal", "PayDate")
+    sLbl  = Array("名義変更")
+    sName = Array("Meigi")
+    ' 売上日以降は一時コメントアウト
+    '"売上日", "売上先", "回次", "出品番号", "車輌代", "消費税", "リサイクル", "合計", "入金日"
+    '"SaleDate", "Buyer", "SaleSession", "SaleLot", "SalePrice", "SaleTax", "SaleRecycle", "SaleTotal", "PayDate"
 
     Dim salT As Single : salT = sepT + rH
     For i = 0 To UBound(sLbl)
@@ -220,12 +219,13 @@ Private Sub ProcessCurrentImage()
     data.CarNumber = GetPeriodNumber(ws) & "-" & Format(GetNextNumber(ws), "000")
     WriteToSheet ws, data
 
-    If Trim(CtlText("txtSaleDate")) <> "" Then
+    If Trim(CtlText("txtMeigi")) <> "" Then
         Dim sd As SaleData
-        sd = CollectSaleData()
         sd.CarNumber = data.CarNumber
+        sd.Meigi     = Trim(CtlText("txtMeigi"))
         WriteToSheetSales ws, sd
     End If
+    ' 売上日以降は一時コメントアウト中のため CollectSaleData() は使用しない
 
     MoveToProcessed m_Files(m_Idx)
     m_Idx = m_Idx + 1
@@ -271,15 +271,16 @@ Private Sub LoadDefaults()
     CtlText("txtAccessories") = ""
     CtlText("txtMemo")        = ""
     CtlText("txtMeigi")       = ""
-    CtlText("txtSaleDate")    = ""
-    CtlText("txtBuyer")       = ""
-    CtlText("txtSaleSession") = ""
-    CtlText("txtSaleLot")     = ""
-    CtlText("txtSalePrice")   = ""
-    CtlText("txtSaleTax")     = ""
-    CtlText("txtSaleRecycle") = ""
-    CtlText("txtSaleTotal")   = ""
-    CtlText("txtPayDate")     = ""
+    ' 売上日以降は一時コメントアウト
+    ' CtlText("txtSaleDate")    = ""
+    ' CtlText("txtBuyer")       = ""
+    ' CtlText("txtSaleSession") = ""
+    ' CtlText("txtSaleLot")     = ""
+    ' CtlText("txtSalePrice")   = ""
+    ' CtlText("txtSaleTax")     = ""
+    ' CtlText("txtSaleRecycle") = ""
+    ' CtlText("txtSaleTotal")   = ""
+    ' CtlText("txtPayDate")     = ""
 End Sub
 
 Private Sub RefreshImage()
@@ -324,14 +325,15 @@ End Function
 Private Function CollectSaleData() As SaleData
     Dim d As SaleData
     d.Meigi       = Trim(CtlText("txtMeigi"))
-    d.SaleDate    = Trim(CtlText("txtSaleDate"))
-    d.Buyer       = Trim(CtlText("txtBuyer"))
-    d.SaleSession = Trim(CtlText("txtSaleSession"))
-    d.SaleLot     = Trim(CtlText("txtSaleLot"))
-    d.SalePrice   = Trim(CtlText("txtSalePrice"))
-    d.SaleTax     = Trim(CtlText("txtSaleTax"))
-    d.SaleRecycle = Trim(CtlText("txtSaleRecycle"))
-    d.SaleTotal   = Trim(CtlText("txtSaleTotal"))
-    d.PaymentDate = Trim(CtlText("txtPayDate"))
+    ' 売上日以降は一時コメントアウト
+    ' d.SaleDate    = Trim(CtlText("txtSaleDate"))
+    ' d.Buyer       = Trim(CtlText("txtBuyer"))
+    ' d.SaleSession = Trim(CtlText("txtSaleSession"))
+    ' d.SaleLot     = Trim(CtlText("txtSaleLot"))
+    ' d.SalePrice   = Trim(CtlText("txtSalePrice"))
+    ' d.SaleTax     = Trim(CtlText("txtSaleTax"))
+    ' d.SaleRecycle = Trim(CtlText("txtSaleRecycle"))
+    ' d.SaleTotal   = Trim(CtlText("txtSaleTotal"))
+    ' d.PaymentDate = Trim(CtlText("txtPayDate"))
     CollectSaleData = d
 End Function
